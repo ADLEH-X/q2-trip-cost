@@ -1,0 +1,60 @@
+export const translations = {
+  tr: {
+    from: 'Nereden?',
+    to: 'Nereye?',
+    useCurrentLocation: 'Mevcut konumumu kullan',
+    oneWay: 'Tek yön',
+    roundTrip: 'Gidiş-dönüş',
+    calculateCost: 'Yolculuk maliyetini hesapla',
+    fuel: 'Yakıt',
+    tolls: 'Yol ücretleri',
+    totalCost: 'Toplam maliyet',
+    fastest: 'En hızlı',
+    cheapest: 'En ekonomik',
+    tollFree: 'Ücretsiz yol',
+    dataSource: 'Veri kaynağı',
+    lastUpdated: 'Son güncelleme',
+    settings: 'Ayarlar',
+    fuelType: 'Yakıt Tipi',
+    petrol: 'Benzin',
+    diesel: 'Dizel',
+    consumption: 'Tüketim (L/100km)',
+    save: 'Kaydet',
+    manualPrice: 'Manuel Fiyat',
+    change: 'Değiştir',
+    tollUnavailable: 'Yol ücreti bilgisi şu an alınamıyor, toplam fiyata dahil edilmedi.',
+    cachedData: 'Önbelleğe alınmış veri',
+  },
+  en: {
+    from: 'From?',
+    to: 'To?',
+    useCurrentLocation: 'Use my current location',
+    oneWay: 'One way',
+    roundTrip: 'Round trip',
+    calculateCost: 'Calculate trip cost',
+    fuel: 'Fuel',
+    tolls: 'Tolls',
+    totalCost: 'Total cost',
+    fastest: 'Fastest',
+    cheapest: 'Cheapest',
+    tollFree: 'Toll-free',
+    dataSource: 'Data source',
+    lastUpdated: 'Last updated',
+    settings: 'Settings',
+    fuelType: 'Fuel Type',
+    petrol: 'Petrol',
+    diesel: 'Diesel',
+    consumption: 'Consumption (L/100km)',
+    save: 'Save',
+    manualPrice: 'Manual Price',
+    change: 'Change',
+    tollUnavailable: 'Toll information is currently unavailable, so the displayed total excludes road fees.',
+    cachedData: 'Cached data',
+  }
+};
+
+export type Language = 'tr' | 'en';
+
+export function getTranslation(lang: Language, key: keyof typeof translations['tr']): string {
+  return translations[lang][key] || translations['tr'][key] || key;
+}
