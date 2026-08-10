@@ -16,10 +16,11 @@ const defaultCenter = {
 
 interface MapProps {
   polyline?: string;
-  isLoaded?: boolean; // Can be passed down if loaded at app level, but let's assume it is
+  isLoaded: boolean;
+  isMockFallback?: boolean;
 }
 
-export default function Map({ polyline, isLoaded = true }: MapProps) {
+export default function Map({ polyline, isLoaded = true, isMockFallback }: MapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [decodedPath, setDecodedPath] = useState<google.maps.LatLng[]>([]);
 

@@ -80,7 +80,7 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
             onClick={handleSave}
             className="w-full bg-white hover:bg-neutral-200 text-black font-bold uppercase tracking-widest text-sm py-3.5 rounded-xl transition-all duration-300 mt-2 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
           >
-            {getTranslation(language, 'saveSettings')}
+            {getTranslation(language, 'save')}
           </button>
         </div>
       </div>

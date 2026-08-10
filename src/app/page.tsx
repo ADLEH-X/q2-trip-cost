@@ -167,7 +167,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
                   <span className="font-medium text-white text-sm tracking-wide">
                     {fuelPrice.priceTRYPerLiter.toFixed(2)} TL/L <span className="opacity-50 font-normal">({(fuelPrice as any).fuelType === 'diesel' ? 'Diesel' : 'Petrol'})</span>
                   </span>
-                  <span className={`text-[10px] ${fuelPrice.status === 'CACHED_STALE' ? 'text-amber-500' : 'text-neutral-500'} tracking-wider uppercase`}>
+                  <span className={`text-[10px] ${fuelPrice.status === 'CACHED' ? 'text-amber-500' : 'text-neutral-500'} tracking-wider uppercase`}>
                     Data: {fuelPrice.source} • {new Date(fuelPrice.retrievedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>

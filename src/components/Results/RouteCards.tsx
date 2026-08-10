@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TripCostCalculation } from '@/lib/providers/interfaces';
+import { TripCostCalculation, RouteCalculation } from '@/lib/providers/interfaces';
 import { getTranslation, Language } from '@/lib/translations';
 import { Zap, CheckCircle2, Fuel, Coins } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
