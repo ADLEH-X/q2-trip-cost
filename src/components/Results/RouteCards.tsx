@@ -17,9 +17,10 @@ interface RouteCardsProps {
   selectedRouteId: string;
   onSelectRoute: (id: string) => void;
   language: Language;
+  isRoundTripActive?: boolean;
 }
 
-export default function RouteCards({ calculations, routes, selectedRouteId, onSelectRoute, language }: RouteCardsProps) {
+export default function RouteCards({ calculations, routes, selectedRouteId, onSelectRoute, language, isRoundTripActive = false }: RouteCardsProps) {
   if (!calculations || calculations.length === 0) return null;
 
   return (
@@ -50,7 +51,7 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
               <div className="flex flex-col gap-1">
                 <span className="font-medium text-white text-lg tracking-wide">{route.label || `Route ${idx + 1}`}</span>
                 <span className="text-xs text-neutral-400 font-light">
-                  {route.distanceKm.toFixed(1)} km • {route.trafficDurationMins} min
+                  {(route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} km • {Number(route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} min
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1">

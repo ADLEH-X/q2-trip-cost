@@ -55,6 +55,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
   
   const [routeResults, setRouteResults] = useState<{ calcs: TripCostCalculation[], routes: RouteCalculation[] } | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string>('');
+  const [isRoundTripActive, setIsRoundTripActive] = useState<boolean>(false);
 
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -71,6 +72,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
   const handleTripSubmit = async (originId: string, destinationId: string, isRoundTrip: boolean) => {
     if (!vehicleSettings || !fuelPrice) return;
     
+    setIsRoundTripActive(isRoundTrip);
     setIsLoading(true);
     try {
       const outboundRoutes = await routingProvider.calculateRoutes(originId, destinationId);
@@ -91,6 +93,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
               fuelCostTRY: c.fuelCostTRY + bestReturn.fuelCostTRY,
               tollCostTRY: c.tollCostTRY + bestReturn.tollCostTRY,
               totalOneWayTRY: c.totalOneWayTRY + bestReturn.totalOneWayTRY,
+              fuelLiters: c.fuelLiters + bestReturn.fuelLiters,
             }));
           }
         }
@@ -190,6 +193,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
                   selectedRouteId={selectedRouteId}
                   onSelectRoute={setSelectedRouteId}
                   language={language}
+                  isRoundTripActive={isRoundTripActive}
                 />
               </div>
             )}
@@ -209,11 +213,19 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
                <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm mt-3">
                  <div className="flex flex-col gap-1">
                    <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Distance</span>
-                   <span className="font-medium text-neutral-200 text-lg">{activeRoute.route.distanceKm.toFixed(1)} <span className="text-sm opacity-50">km</span></span>
+                   <span className="font-medium text-neutral-200 text-lg">{(activeRoute.route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} <span className="text-sm opacity-50">km</span></span>
                  </div>
-                 <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1">
                    <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Duration</span>
-                   <span className="font-medium text-neutral-200 text-lg">{activeRoute.route.trafficDurationMins} <span className="text-sm opacity-50">mins</span></span>
+                   <div className="flex items-center gap-2">
+                     <span className="font-medium text-neutral-200 text-lg">{Number(activeRoute.route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} <span className="text-sm opacity-50">mins</span></span>
+                     {(() => {
+                       const delay = (Number(activeRoute.route.trafficDurationMins) - Number(activeRoute.route.durationMins)) * (isRoundTripActive ? 2 : 1);
+                       if (delay >= 8) return <span className="text-[10px] font-bold bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">+{delay}m delay</span>;
+                       if (delay >= 3) return <span className="text-[10px] font-bold bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">+{delay}m delay</span>;
+                       return <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Clear</span>;
+                     })()}
+                   </div>
                  </div>
                  <div className="flex flex-col gap-1">
                    <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Fuel Used</span>

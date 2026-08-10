@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { GoogleMap, Polyline, Marker } from '@react-google-maps/api';
+import { GoogleMap, Polyline, Marker, TrafficLayer } from '@react-google-maps/api';
 
 const containerStyle = {
   width: '100%',
@@ -76,6 +76,7 @@ export default function Map({ polyline, isLoaded = true, isMockFallback }: MapPr
         >
           {decodedPath.length > 0 && (
             <>
+              <TrafficLayer />
               <Polyline
                 path={decodedPath}
                 options={{

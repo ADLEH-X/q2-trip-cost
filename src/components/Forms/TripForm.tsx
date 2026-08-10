@@ -44,7 +44,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
   const onOriginPlaceChanged = () => {
     if (originAutocompleteRef.current !== null) {
       const place = originAutocompleteRef.current.getPlace();
-      if (place.place_id && place.formatted_address) {
+      if (place?.place_id && place?.formatted_address) {
         setOriginPlaceId(place.place_id);
         setOriginText(place.name ? `${place.name}, ${place.formatted_address}` : place.formatted_address);
       }
@@ -54,7 +54,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
   const onDestinationPlaceChanged = () => {
     if (destinationAutocompleteRef.current !== null) {
       const place = destinationAutocompleteRef.current.getPlace();
-      if (place.place_id && place.formatted_address) {
+      if (place?.place_id && place?.formatted_address) {
         setDestinationPlaceId(place.place_id);
         setDestinationText(place.name ? `${place.name}, ${place.formatted_address}` : place.formatted_address);
       }

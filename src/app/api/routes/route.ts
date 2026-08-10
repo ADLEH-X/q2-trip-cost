@@ -47,6 +47,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Routing failed' }, { status: response.status });
     }
 
+    // Force alternative route if Google only returns 1
+    if (data.routes && data.routes.length === 1) {
+      const altPayload = { 
+        ...payload, 
+        routeModifiers: { ...payload.routeModifiers, avoidTolls: true } 
+      };
+      
+      const altResponse = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY, 'X-Goog-FieldMask': fieldMask },
+        body: JSON.stringify(altPayload)
+      });
+      
+      if (altResponse.ok) {
+        const altData = await altResponse.json();
+        if (altData.routes && altData.routes.length > 0) {
+          // Only add if it's actually a different route (distance differs)
+          if (altData.routes[0].distanceMeters !== data.routes[0].distanceMeters) {
+            data.routes.push(altData.routes[0]);
+          } else {
+            // Try avoiding highways if toll-free was the same
+            const hwyPayload = { ...payload, routeModifiers: { ...payload.routeModifiers, avoidHighways: true } };
+            const hwyResponse = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY, 'X-Goog-FieldMask': fieldMask },
+              body: JSON.stringify(hwyPayload)
+            });
+            if (hwyResponse.ok) {
+              const hwyData = await hwyResponse.json();
+              if (hwyData.routes && hwyData.routes.length > 0 && hwyData.routes[0].distanceMeters !== data.routes[0].distanceMeters) {
+                data.routes.push(hwyData.routes[0]);
+              }
+            }
+          }
+        }
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error proxying route request:', error);
