@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { ArrowDownUp, MapPin, Navigation } from 'lucide-react';
+import { ArrowDownUp, MapPin, Navigation, Home } from 'lucide-react';
 import { getTranslation, Language } from '@/lib/translations';
 import { Autocomplete } from '@react-google-maps/api';
 
@@ -29,6 +29,27 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
     const tempId = originPlaceId;
     setOriginPlaceId(destinationPlaceId);
     setDestinationPlaceId(tempId);
+  };
+
+  const handleSetHome = () => {
+    const homeAddress = "Fit216 Sports Club & SPA, Dumlupınar, Barış Sk. No:45 D:2.Etap -2, 34720 Kadıköy/İstanbul";
+    setOriginText(homeAddress);
+    
+    if (typeof window !== 'undefined' && window.google) {
+      const service = new google.maps.places.PlacesService(document.createElement('div'));
+      service.findPlaceFromQuery(
+        { query: "Fit216 Sports Club & SPA Kadikoy", fields: ['place_id'] }, 
+        (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+            if (results[0].place_id) {
+               setOriginPlaceId(results[0].place_id);
+            }
+          } else {
+            console.error("Failed to find Place ID for Home address:", status);
+          }
+        }
+      );
+    }
   };
 
   const onOriginLoad = (autocomplete: google.maps.places.Autocomplete) => {
@@ -123,6 +144,14 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
                 {renderOriginInput()}
               </Autocomplete>
             ) : renderOriginInput()}
+            <button 
+              type="button"
+              onClick={handleSetHome}
+              title="Set to Fit216 Kadıköy"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
+            >
+              <Home size={18} />
+            </button>
           </div>
 
           <button

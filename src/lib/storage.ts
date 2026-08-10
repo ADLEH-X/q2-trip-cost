@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
 };
 
 export const defaultVehicleSettings: VehicleSettings = {
+  carModel: 'Audi Q2',
   fuelType: 'petrol',
   consumptionL100km: 5.4, // 2026 Audi Q2 35 TFSI WLTP Combined Average
   tollClass: 1, // standard passenger car

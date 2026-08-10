@@ -35,6 +35,7 @@ export interface FuelPriceInfo {
 }
 
 export interface VehicleSettings {
+  carModel?: 'Audi Q2' | 'Hyundai i20 2025';
   fuelType: 'petrol' | 'diesel';
   consumptionL100km: number;
   tollClass: number; // Default 1 for passenger car

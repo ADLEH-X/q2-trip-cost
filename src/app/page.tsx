@@ -131,7 +131,11 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
           <div className="px-6 py-5 rounded-b-3xl sm:rounded-3xl backdrop-blur-xl bg-black/40 border border-white/10 shadow-2xl flex items-center justify-between sticky top-0 z-40 sm:static transition-all">
             <div className="flex items-center gap-3">
               <div className="text-white">
-                <AudiLogo className="w-14 h-6 opacity-90" />
+                {vehicleSettings?.carModel === 'Hyundai i20 2025' ? (
+                   <span className="font-bold text-xl italic tracking-tighter">HYUNDAI</span>
+                ) : (
+                  <AudiLogo className="w-14 h-6 opacity-90" />
+                )}
               </div>
               <div className="h-6 w-px bg-white/20 mx-1"></div>
               <h1 className="font-light text-lg tracking-wide text-neutral-200">Trip Cost</h1>

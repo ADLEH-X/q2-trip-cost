@@ -37,9 +37,29 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
           <X size={20} />
         </button>
         
-        <h2 className="text-xl font-light text-white mb-6">Audi Q2 Settings</h2>
+        <h2 className="text-xl font-light text-white mb-6">{settings.carModel || 'Vehicle'} Settings</h2>
         
         <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-neutral-400">
+              Vehicle Model
+            </label>
+            <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
+              <button
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.carModel !== 'Hyundai i20 2025' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                onClick={() => setSettings({...settings, carModel: 'Audi Q2', fuelType: 'petrol', consumptionL100km: 5.4})}
+              >
+                Audi Q2
+              </button>
+              <button
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.carModel === 'Hyundai i20 2025' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                onClick={() => setSettings({...settings, carModel: 'Hyundai i20 2025', fuelType: 'petrol', consumptionL100km: 5.3})}
+              >
+                Hyundai i20
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-neutral-400">
               {getTranslation(language, 'fuelType')}
@@ -47,13 +67,13 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
             <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
               <button
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.fuelType === 'petrol' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                onClick={() => setSettings({...settings, fuelType: 'petrol', consumptionL100km: 5.4})}
+                onClick={() => setSettings({...settings, fuelType: 'petrol', consumptionL100km: settings.carModel === 'Hyundai i20 2025' ? 5.3 : 5.4})}
               >
                 {getTranslation(language, 'petrol')}
               </button>
               <button
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.fuelType === 'diesel' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                onClick={() => setSettings({...settings, fuelType: 'diesel', consumptionL100km: 6.0})}
+                onClick={() => setSettings({...settings, fuelType: 'diesel', consumptionL100km: settings.carModel === 'Hyundai i20 2025' ? 4.5 : 6.0})}
               >
                 {getTranslation(language, 'diesel')}
               </button>
