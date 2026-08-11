@@ -189,16 +189,28 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
             </div>
 
             {routeResults && (
-              <div className="mt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out">
-                <h3 className="font-light tracking-wide text-neutral-400 mb-4 ml-1 uppercase text-xs">Alternative Routes</h3>
-                <RouteCards 
-                  calculations={routeResults.calcs}
-                  routes={routeResults.routes}
-                  selectedRouteId={selectedRouteId}
-                  onSelectRoute={setSelectedRouteId}
-                  language={language}
-                  isRoundTripActive={isRoundTripActive}
-                />
+              <div className="mt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out flex flex-col gap-6">
+                <div>
+                  <h3 className="font-light tracking-wide text-neutral-400 mb-4 ml-1 uppercase text-xs">Alternative Routes</h3>
+                  <RouteCards 
+                    calculations={routeResults.calcs}
+                    routes={routeResults.routes}
+                    selectedRouteId={selectedRouteId}
+                    onSelectRoute={setSelectedRouteId}
+                    language={language}
+                    isRoundTripActive={isRoundTripActive}
+                  />
+                </div>
+                
+                {/* Mobile Trip Details */}
+                <div className="md:hidden">
+                  <TripDetailsCard 
+                    activeCalc={activeCalc} 
+                    activeRoute={activeRoute} 
+                    isRoundTripActive={isRoundTripActive} 
+                    vehicleSettings={vehicleSettings} 
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -211,37 +223,13 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
              <div className="absolute inset-0 pointer-events-none ring-inset ring-1 ring-white/10 rounded-3xl transition-opacity group-hover:opacity-50"></div>
            </div>
            
-           {activeCalc && activeRoute && (
-             <div className="backdrop-blur-xl bg-black/40 rounded-3xl p-7 shadow-2xl border border-white/10 flex flex-col gap-3 transition-all">
-               <h3 className="font-light text-xl tracking-wide text-white">Trip Details</h3>
-               <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm mt-3">
-                 <div className="flex flex-col gap-1">
-                   <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Distance</span>
-                   <span className="font-medium text-neutral-200 text-lg">{(activeRoute.route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} <span className="text-sm opacity-50">km</span></span>
-                 </div>
-                  <div className="flex flex-col gap-1">
-                   <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Duration</span>
-                   <div className="flex items-center gap-2">
-                     <span className="font-medium text-neutral-200 text-lg">{Number(activeRoute.route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} <span className="text-sm opacity-50">mins</span></span>
-                     {(() => {
-                       const delay = (Number(activeRoute.route.trafficDurationMins) - Number(activeRoute.route.durationMins)) * (isRoundTripActive ? 2 : 1);
-                       if (delay >= 8) return <span className="text-[10px] font-bold bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">+{delay}m delay</span>;
-                       if (delay >= 3) return <span className="text-[10px] font-bold bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">+{delay}m delay</span>;
-                       return <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Clear</span>;
-                     })()}
-                   </div>
-                 </div>
-                 <div className="flex flex-col gap-1">
-                   <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Fuel Used</span>
-                   <span className="font-medium text-neutral-200 text-lg">{activeCalc.fuelLiters.toFixed(2)} <span className="text-sm opacity-50">L</span></span>
-                 </div>
-                 <div className="flex flex-col gap-1">
-                   <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Consumption</span>
-                   <span className="font-medium text-neutral-200 text-lg">{vehicleSettings?.consumptionL100km} <span className="text-sm opacity-50">L/100km</span></span>
-                 </div>
-               </div>
-             </div>
-           )}
+           {/* Desktop Trip Details */}
+           <TripDetailsCard 
+             activeCalc={activeCalc} 
+             activeRoute={activeRoute} 
+             isRoundTripActive={isRoundTripActive} 
+             vehicleSettings={vehicleSettings} 
+           />
         </div>
       </div>
 
@@ -253,5 +241,40 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
         />
       )}
     </main>
+  );
+}
+
+function TripDetailsCard({ activeCalc, activeRoute, isRoundTripActive, vehicleSettings }: any) {
+  if (!activeCalc || !activeRoute) return null;
+  return (
+    <div className="backdrop-blur-xl bg-black/40 rounded-3xl p-7 shadow-2xl border border-white/10 flex flex-col gap-3 transition-all w-full">
+      <h3 className="font-light text-xl tracking-wide text-white">Trip Details</h3>
+      <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm mt-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Distance</span>
+          <span className="font-medium text-neutral-200 text-lg">{(activeRoute.route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} <span className="text-sm opacity-50">km</span></span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Duration</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-neutral-200 text-lg">{Number(activeRoute.route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} <span className="text-sm opacity-50">mins</span></span>
+            {(() => {
+              const delay = (Number(activeRoute.route.trafficDurationMins) - Number(activeRoute.route.durationMins)) * (isRoundTripActive ? 2 : 1);
+              if (delay >= 8) return <span className="text-[10px] font-bold bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">+{delay}m delay</span>;
+              if (delay >= 3) return <span className="text-[10px] font-bold bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">+{delay}m delay</span>;
+              return <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Clear</span>;
+            })()}
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Fuel Used</span>
+          <span className="font-medium text-neutral-200 text-lg">{activeCalc.fuelLiters.toFixed(2)} <span className="text-sm opacity-50">L</span></span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Consumption</span>
+          <span className="font-medium text-neutral-200 text-lg">{vehicleSettings?.consumptionL100km} <span className="text-sm opacity-50">L/100km</span></span>
+        </div>
+      </div>
+    </div>
   );
 }
