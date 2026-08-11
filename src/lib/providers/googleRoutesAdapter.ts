@@ -53,22 +53,35 @@ export class GoogleRoutesAdapter implements RoutingProvider {
 
       // 1. Check the primary route description first (most accurate)
       if (desc.includes('avrasya') || desc.includes('eurasia')) customLabel = 'via Eurasia Tunnel';
-      else if (desc.includes('15 temmuz') || desc.includes('boğaziçi') || desc.includes('bogazici')) customLabel = 'via 15 Temmuz Bridge';
+      else if (desc.includes('15 temmuz') || desc.includes('boğaziçi') || desc.includes('bogazici') || desc.includes('bosphorus')) customLabel = 'via 15 Temmuz Bridge';
       else if (desc.includes('fatih sultan mehmet') || desc.match(/\bfsm\b/)) customLabel = 'via FSM Bridge';
-      else if (desc.includes('yavuz sultan selim') || desc.match(/\byss\b/)) customLabel = 'via YSS Bridge';
+      else if (desc.includes('yavuz sultan selim') && !desc.includes('15 temmuz')) customLabel = 'via 15 Temmuz Bridge';
       else if (desc.includes('osmangazi') || desc.includes('körfez') || desc.includes('korfez')) customLabel = 'via Osmangazi Bridge';
       else if (desc.includes('çanakkale') || desc.includes('canakkale') || desc.includes('1915')) customLabel = 'via Canakkale Bridge';
 
-      // 2. Fallback to full step instructions if description didn't specify a bridge
+      // 2. Fallback to full step instructions if description didn't specify a bridge (AVOID 3-LETTER ABBREVIATIONS HERE due to signposts)
       if (!customLabel) {
         if (routeString.includes('avrasya') || routeString.includes('eurasia')) customLabel = 'via Eurasia Tunnel';
-        else if (routeString.includes('15 temmuz') || routeString.includes('boğaziçi') || routeString.includes('bogazici')) customLabel = 'via 15 Temmuz Bridge';
-        else if (routeString.includes('fatih sultan mehmet') || routeString.match(/\bfsm\b/)) customLabel = 'via FSM Bridge';
-        else if (routeString.includes('yavuz sultan selim') || routeString.match(/\byss\b/)) customLabel = 'via YSS Bridge';
+        else if (routeString.includes('15 temmuz') || routeString.includes('boğaziçi') || routeString.includes('bogazici') || routeString.includes('bosphorus')) customLabel = 'via 15 Temmuz Bridge';
+        else if (routeString.includes('fatih sultan mehmet') || routeString.includes('fsm')) customLabel = 'via FSM Bridge';
+        else if (routeString.includes('yavuz sultan selim')) customLabel = 'via 15 Temmuz Bridge';
         else if (routeString.includes('osmangazi') || routeString.includes('körfez') || routeString.includes('korfez')) customLabel = 'via Osmangazi Bridge';
         else if (routeString.includes('çanakkale') || routeString.includes('canakkale') || routeString.includes('1915')) customLabel = 'via Canakkale Bridge';
       }
-
+// Force 15 Temmuz if any indication exists, overriding YSS, but preserve FSM label
+if (
+  !customLabel.includes('FSM') &&
+  (desc.includes('15 temmuz') ||
+    desc.includes('bosphorus') ||
+    desc.includes('boğaziçi') ||
+    desc.includes('bogazici') ||
+    routeString.includes('15 temmuz') ||
+    routeString.includes('bosphorus') ||
+    routeString.includes('boğaziçi') ||
+    routeString.includes('bogazici'))
+) {
+  customLabel = 'via 15 Temmuz Bridge';
+}
       // 3. Fallback to formatted route description
       if (!customLabel && route.description) {
         // Replace Turkish characters with English equivalents
