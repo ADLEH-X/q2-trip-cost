@@ -185,7 +185,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
             )}
             
             <div className="md:hidden h-56 w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg">
-              <Map polyline={activeRoute?.route.polyline} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} />
+              <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} />
             </div>
 
             {routeResults && (
@@ -207,7 +207,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
         {/* Right Column */}
         <div className="hidden md:flex flex-col gap-6 sticky top-6 h-[calc(100vh-3rem)]">
            <div className="flex-1 rounded-3xl overflow-hidden border border-white/10 shadow-2xl ring-1 ring-white/5 relative group">
-             <Map polyline={activeRoute?.route.polyline} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} />
+             <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} />
              <div className="absolute inset-0 pointer-events-none ring-inset ring-1 ring-white/10 rounded-3xl transition-opacity group-hover:opacity-50"></div>
            </div>
            

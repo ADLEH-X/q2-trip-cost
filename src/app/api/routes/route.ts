@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         },
         tollPasses: [] // We might not have specific Turkish passes in enum, so leave empty or configure
       },
-      extraComputations: ['TOLLS'],
+      extraComputations: ['TOLLS', 'TRAFFIC_ON_POLYLINE'],
     };
 
     // The field mask is crucial for Routes API

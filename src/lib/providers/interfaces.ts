@@ -1,3 +1,9 @@
+export interface TrafficInterval {
+  startPointIndex: number;
+  endPointIndex: number;
+  speed: 'NORMAL' | 'SLOW' | 'TRAFFIC_JAM';
+}
+
 export interface RouteInfo {
   id: string;
   label: string;
@@ -5,6 +11,7 @@ export interface RouteInfo {
   durationMins: number; // normal
   trafficDurationMins: number;
   polyline: string;
+  trafficIntervals?: TrafficInterval[];
   warnings: string[];
 }
 
