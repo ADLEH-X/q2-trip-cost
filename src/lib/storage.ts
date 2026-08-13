@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   VEHICLE_SETTINGS: 'q2_vehicle_settings',
   LANGUAGE: 'q2_language',
   HISTORY: 'q2_history',
+  THEME: 'q2_theme',
 };
 
 export const defaultVehicleSettings: VehicleSettings = {
@@ -60,5 +61,23 @@ export const storage = {
   clearHistory(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEYS.HISTORY);
+  },
+
+  getTheme(): 'dark' | 'light' {
+    if (typeof window === 'undefined') return 'dark';
+    const theme = localStorage.getItem(STORAGE_KEYS.THEME);
+    return theme === 'light' ? 'light' : 'dark';
+  },
+
+  saveTheme(theme: 'dark' | 'light'): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  },
+
+  applyTheme(): void {
+    if (typeof window === 'undefined') return;
+    const theme = this.getTheme();
+    document.documentElement.setAttribute('data-theme', theme);
   }
 };

@@ -37,12 +37,12 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
           <X size={20} />
         </button>
         
-        <h2 className="text-xl font-light text-white mb-6">{settings.carModel || 'Vehicle'} Settings</h2>
+        <h2 className="text-xl font-light text-white mb-6">{settings.carModel || getTranslation(language, 'vehicle')} {getTranslation(language, 'settings')}</h2>
         
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-neutral-400">
-              Vehicle Model
+              {getTranslation(language, 'vehicleModel')}
             </label>
             <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
               <button
@@ -83,9 +83,9 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end">
               <label className="text-sm font-medium text-neutral-400">
-                {getTranslation(language, 'consumption')} (L/100km)
+                {getTranslation(language, 'consumption')} ({getTranslation(language, 'consumptionUnit')})
               </label>
-              <span className="text-[10px] text-neutral-600 uppercase tracking-widest font-bold">WLTP Average</span>
+              <span className="text-[10px] text-neutral-600 uppercase tracking-widest font-bold">{getTranslation(language, 'wltpAverage')}</span>
             </div>
             <input 
               type="number"

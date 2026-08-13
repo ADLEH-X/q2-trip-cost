@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import TripForm from '@/components/Forms/TripForm';
 import RouteCards from '@/components/Results/RouteCards';
+import RecentTrips from '@/components/Results/RecentTrips';
 import VehicleSetup from '@/components/Settings/VehicleSetup';
 import Map from '@/components/Map/Map';
 import AudiLogo from '@/components/UI/AudiLogo';
-import { Settings, AlertTriangle } from 'lucide-react';
+import { Settings, AlertTriangle, Sun, Moon } from 'lucide-react';
 import { useLoadScript } from '@react-google-maps/api';
 
 import { routingProvider } from '@/lib/providers/googleRoutesAdapter';
@@ -56,6 +57,8 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
   const [routeResults, setRouteResults] = useState<{ calcs: TripCostCalculation[], routes: RouteCalculation[] } | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string>('');
   const [isRoundTripActive, setIsRoundTripActive] = useState<boolean>(false);
+  const [tripHistory, setTripHistory] = useState<any[]>([]);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -67,9 +70,12 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
       setShowSettings(true); 
     }
     fuelPriceProvider.getCurrentPrice().then(setFuelPrice);
+    setTripHistory(storage.getHistory());
+    storage.applyTheme();
+    setTheme(storage.getTheme());
   }, []);
 
-  const handleTripSubmit = async (originId: string, destinationId: string, isRoundTrip: boolean) => {
+  const handleTripSubmit = async (originId: string, destinationId: string, isRoundTrip: boolean, originText?: string, destinationText?: string) => {
     if (!vehicleSettings || !fuelPrice) return;
     
     setIsRoundTripActive(isRoundTrip);
@@ -99,14 +105,25 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
         }
 
         setRouteResults({ calcs, routes: outboundRoutes });
-        setSelectedRouteId(calcs[0].routeId); 
+        setSelectedRouteId(calcs[0].routeId);
+
+        // Save to trip history
+        if (originText && destinationText) {
+          storage.saveToHistory({
+            originText,
+            destinationText,
+            originPlaceId: originId,
+            destinationPlaceId: destinationId,
+          });
+          setTripHistory(storage.getHistory());
+        } 
       } else {
         setRouteResults(null);
-        alert('No driving route found');
+        alert(getTranslation(language, 'noDrivingRouteFound'));
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to calculate routes. Check API keys.');
+      alert(getTranslation(language, 'failedToCalculateRoutes'));
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +136,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
     <main className="min-h-screen text-neutral-100 flex flex-col sm:items-center sm:p-6 pb-20 selection:bg-red-500/30">
       {isDemo && (
         <div className="w-full bg-red-600 text-white font-bold text-center py-1.5 text-xs tracking-wider sticky top-0 z-50 shadow-md">
-          DEMO MODE ACTIVE
+          {getTranslation(language, 'demoModeActive')}
         </div>
       )}
       <div className="w-full sm:max-w-md md:max-w-4xl grid md:grid-cols-2 gap-6 mt-4">
@@ -138,26 +155,50 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
                 )}
               </div>
               <div className="h-6 w-px bg-white/20 mx-1"></div>
-              <h1 className="font-light text-lg tracking-wide text-neutral-200">Trip Cost</h1>
+              <h1 className="font-light text-lg tracking-wide text-neutral-200">{getTranslation(language, 'appTitle')}</h1>
             </div>
-            <button 
-              onClick={() => setShowSettings(true)}
-              className="text-neutral-400 hover:text-white transition-colors p-2.5 rounded-full hover:bg-white/10 backdrop-blur-sm"
-            >
-              <Settings size={22} strokeWidth={1.5} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => {
+                  const newLang = language === 'tr' ? 'en' : 'tr';
+                  setLanguage(newLang);
+                  storage.saveLanguage(newLang);
+                }}
+                className="text-neutral-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-full hover:bg-white/10 backdrop-blur-sm text-xs font-bold tracking-wider uppercase"
+                title={language === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
+              >
+                {language === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+              </button>
+              <button 
+                onClick={() => {
+                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
+                  storage.saveTheme(newTheme);
+                }}
+                className="text-neutral-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 backdrop-blur-sm"
+                title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              >
+                {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+              </button>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="text-neutral-400 hover:text-white transition-colors p-2.5 rounded-full hover:bg-white/10 backdrop-blur-sm"
+              >
+                <Settings size={22} strokeWidth={1.5} />
+              </button>
+            </div>
           </div>
 
           <div className="px-4 sm:px-0 flex flex-col gap-5">
             {apiKeyMissing && (
               <div className="bg-amber-50 text-amber-700 p-3 rounded-xl flex gap-2 items-start text-sm border border-amber-200">
                 <AlertTriangle size={16} className="shrink-0 mt-0.5" /> 
-                <p>Google Maps API Key is missing. The UI is running in visual mock mode.</p>
+                <p>{getTranslation(language, 'apiKeyMissingWarning')}</p>
               </div>
             )}
             {loadError && !apiKeyMissing && (
               <div className="bg-red-50 text-red-700 p-3 rounded-xl flex gap-2 items-center text-sm border border-red-200">
-                <AlertTriangle size={16} /> Google Maps failed to load. Please check your API key restrictions.
+                <AlertTriangle size={16} /> {getTranslation(language, 'mapLoadError')}
               </div>
             )}
             <TripForm 
@@ -168,14 +209,26 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
               isMockFallback={apiKeyMissing || !!loadError}
             />
 
+            <RecentTrips
+              language={language}
+              trips={tripHistory}
+              onSelect={(trip) => {
+                handleTripSubmit(trip.originPlaceId, trip.destinationPlaceId, false, trip.originText, trip.destinationText);
+              }}
+              onClear={() => {
+                storage.clearHistory();
+                setTripHistory([]);
+              }}
+            />
+
             {fuelPrice && (
               <div className="backdrop-blur-md bg-white/5 rounded-2xl px-5 py-4 flex items-center justify-between text-xs text-neutral-400 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer" onClick={() => setShowSettings(true)}>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-white text-sm tracking-wide">
-                    {fuelPrice.priceTRYPerLiter.toFixed(2)} TL/L <span className="opacity-50 font-normal">({(fuelPrice as any).fuelType === 'diesel' ? 'Diesel' : 'Petrol'})</span>
+                    {fuelPrice.priceTRYPerLiter.toFixed(2)} TL/L <span className="opacity-50 font-normal">({(fuelPrice as any).fuelType === 'diesel' ? getTranslation(language, 'diesel') : getTranslation(language, 'petrol')})</span>
                   </span>
                   <span className={`text-[10px] ${fuelPrice.status === 'CACHED' ? 'text-amber-500' : 'text-neutral-500'} tracking-wider uppercase`}>
-                    Data: {fuelPrice.source} • {new Date(fuelPrice.retrievedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {getTranslation(language, 'dataLabel')}: {fuelPrice.source} • {new Date(fuelPrice.retrievedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-400 transition-colors">
@@ -185,13 +238,13 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
             )}
             
             <div className="md:hidden h-56 w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg">
-              <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} />
+              <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} theme={theme} />
             </div>
 
             {routeResults && (
               <div className="mt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out flex flex-col gap-6">
                 <div>
-                  <h3 className="font-light tracking-wide text-neutral-400 mb-4 ml-1 uppercase text-xs">Alternative Routes</h3>
+                  <h3 className="font-light tracking-wide text-neutral-400 mb-4 ml-1 uppercase text-xs">{getTranslation(language, 'alternativeRoutes')}</h3>
                   <RouteCards 
                     calculations={routeResults.calcs}
                     routes={routeResults.routes}
@@ -209,6 +262,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
                     activeRoute={activeRoute} 
                     isRoundTripActive={isRoundTripActive} 
                     vehicleSettings={vehicleSettings} 
+                    language={language}
                   />
                 </div>
               </div>
@@ -219,7 +273,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
         {/* Right Column */}
         <div className="hidden md:flex flex-col gap-6 sticky top-6 h-[calc(100vh-3rem)]">
            <div className="flex-1 rounded-3xl overflow-hidden border border-white/10 shadow-2xl ring-1 ring-white/5 relative group">
-             <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} />
+             <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} theme={theme} />
              <div className="absolute inset-0 pointer-events-none ring-inset ring-1 ring-white/10 rounded-3xl transition-opacity group-hover:opacity-50"></div>
            </div>
            
@@ -229,6 +283,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
              activeRoute={activeRoute} 
              isRoundTripActive={isRoundTripActive} 
              vehicleSettings={vehicleSettings} 
+             language={language}
            />
         </div>
       </div>
@@ -244,35 +299,35 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
   );
 }
 
-function TripDetailsCard({ activeCalc, activeRoute, isRoundTripActive, vehicleSettings }: any) {
+function TripDetailsCard({ activeCalc, activeRoute, isRoundTripActive, vehicleSettings, language }: any) {
   if (!activeCalc || !activeRoute) return null;
   return (
     <div className="backdrop-blur-xl bg-black/40 rounded-3xl p-7 shadow-2xl border border-white/10 flex flex-col gap-3 transition-all w-full">
-      <h3 className="font-light text-xl tracking-wide text-white">Trip Details</h3>
+      <h3 className="font-light text-xl tracking-wide text-white">{getTranslation(language, 'tripDetails')}</h3>
       <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm mt-3">
         <div className="flex flex-col gap-1">
-          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Distance</span>
-          <span className="font-medium text-neutral-200 text-lg">{(activeRoute.route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} <span className="text-sm opacity-50">km</span></span>
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">{getTranslation(language, 'distance')}</span>
+          <span className="font-medium text-neutral-200 text-lg">{(activeRoute.route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} <span className="text-sm opacity-50">{getTranslation(language, 'km')}</span></span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Duration</span>
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">{getTranslation(language, 'duration')}</span>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-neutral-200 text-lg">{Number(activeRoute.route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} <span className="text-sm opacity-50">mins</span></span>
+            <span className="font-medium text-neutral-200 text-lg">{Number(activeRoute.route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} <span className="text-sm opacity-50">{getTranslation(language, 'mins')}</span></span>
             {(() => {
               const delay = (Number(activeRoute.route.trafficDurationMins) - Number(activeRoute.route.durationMins)) * (isRoundTripActive ? 2 : 1);
-              if (delay >= 8) return <span className="text-[10px] font-bold bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">+{delay}m delay</span>;
-              if (delay >= 3) return <span className="text-[10px] font-bold bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">+{delay}m delay</span>;
-              return <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Clear</span>;
+              if (delay >= 8) return <span className="text-[10px] font-bold bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">+{delay} {getTranslation(language, 'minuteDelay')}</span>;
+              if (delay >= 3) return <span className="text-[10px] font-bold bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">+{delay} {getTranslation(language, 'minuteDelay')}</span>;
+              return <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">{getTranslation(language, 'trafficClear')}</span>;
             })()}
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Fuel Used</span>
-          <span className="font-medium text-neutral-200 text-lg">{activeCalc.fuelLiters.toFixed(2)} <span className="text-sm opacity-50">L</span></span>
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">{getTranslation(language, 'fuelUsed')}</span>
+          <span className="font-medium text-neutral-200 text-lg">{activeCalc.fuelLiters.toFixed(2)} <span className="text-sm opacity-50">{getTranslation(language, 'liters')}</span></span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">Consumption</span>
-          <span className="font-medium text-neutral-200 text-lg">{vehicleSettings?.consumptionL100km} <span className="text-sm opacity-50">L/100km</span></span>
+          <span className="text-neutral-500 uppercase text-[10px] tracking-widest font-bold">{getTranslation(language, 'consumption')}</span>
+          <span className="font-medium text-neutral-200 text-lg">{vehicleSettings?.consumptionL100km} <span className="text-sm opacity-50">{getTranslation(language, 'consumptionUnit')}</span></span>
         </div>
       </div>
     </div>

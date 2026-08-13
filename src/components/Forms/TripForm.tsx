@@ -73,11 +73,11 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
         },
         (error) => {
           console.error('Geolocation error', error);
-          alert('Unable to retrieve your location.');
+          alert(getTranslation(language, 'unableToRetrieveLocation'));
         }
       );
     } else {
-      alert('Geolocation not supported.');
+      alert(getTranslation(language, 'geolocationNotSupported'));
     }
   };
   const onOriginLoad = (autocomplete: google.maps.places.Autocomplete) => {
@@ -119,7 +119,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
     }
     
     if (!originPlaceId || !destinationPlaceId) {
-      alert('Please select valid locations from the dropdown suggestions.');
+      alert(getTranslation(language, 'selectValidLocations'));
       return;
     }
     onSubmit(originPlaceId, destinationPlaceId, isRoundTrip, originText, destinationText);
@@ -175,7 +175,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
             <button 
               type="button"
               onClick={handleSetHome}
-              title="Set to Fit216 Kadıköy"
+              title={getTranslation(language, 'setToHome')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
             >
               <Home size={18} />
@@ -183,7 +183,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
                       <button
               type="button"
               onClick={handleSetCurrentLocation}
-              title="Use current location"
+              title={getTranslation(language, 'useCurrentLocation')}
               className="absolute right-10 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
             >
               <Navigation size={18} />
@@ -194,7 +194,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
             type="button"
             onClick={handleSwap}
             className="absolute left-7 top-1/2 -translate-y-1/2 -translate-x-1/2 bg-neutral-900 border border-white/10 rounded-full p-2 shadow-xl hover:bg-neutral-800 transition-all z-10 text-neutral-400 hover:text-red-500"
-            aria-label="Swap locations"
+            aria-label={getTranslation(language, 'swapLocations')}
           >
             <ArrowDownUp size={16} strokeWidth={2} />
           </button>

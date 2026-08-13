@@ -50,14 +50,14 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
             
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="flex flex-col gap-1">
-                <span className="font-medium text-white text-lg tracking-wide">{route.label || `Route ${idx + 1}`}</span>
+                <span className="font-medium text-white text-lg tracking-wide">{route.label || `${getTranslation(language, 'routeLabel')} ${idx + 1}`}</span>
                 <span className="text-xs text-neutral-400 font-light">
-                  {(route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} km • {Number(route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} min
+                  {(route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} {getTranslation(language, 'km')} • {Number(route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} {getTranslation(language, 'min')}
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className={`text-xl font-light tracking-tight ${isSelected ? 'text-red-500' : 'text-white'}`}>
-                  {calc.totalOneWayTRY.toFixed(0)} <span className="text-sm opacity-50">TL</span>
+                  {calc.totalOneWayTRY.toFixed(0)} <span className="text-sm opacity-50">{getTranslation(language, 'currencyTRY')}</span>
                 </span>
               </div>
             </div>
@@ -82,12 +82,12 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
 
             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10 text-xs relative z-10">
               <div className="flex items-center justify-between">
-                <span className="text-neutral-500 flex items-center gap-1.5"><Fuel size={14} /> Fuel</span>
-                <span className="font-medium text-neutral-300">{calc.fuelCostTRY.toFixed(0)} TL</span>
+                <span className="text-neutral-500 flex items-center gap-1.5"><Fuel size={14} /> {getTranslation(language, 'fuel')}</span>
+                <span className="font-medium text-neutral-300">{calc.fuelCostTRY.toFixed(0)} {getTranslation(language, 'currencyTRY')}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-neutral-500 flex items-center gap-1.5"><Coins size={14} /> Toll</span>
-                <span className="font-medium text-neutral-300">{calc.tollCostTRY.toFixed(0)} TL</span>
+                <span className="text-neutral-500 flex items-center gap-1.5"><Coins size={14} /> {getTranslation(language, 'tolls')}</span>
+                <span className="font-medium text-neutral-300">{calc.tollCostTRY.toFixed(0)} {getTranslation(language, 'currencyTRY')}</span>
               </div>
             </div>
             {isSelected && (
@@ -95,9 +95,9 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
                 type="button"
                 onClick={() => window.open(buildDirectionsUrl(route), '_blank')}
                 className="flex items-center gap-1 px-3 py-1 mt-2 text-sm text-white bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
-                title="Open this route in Google Maps"
+                title={getTranslation(language, 'openInMapsTitle')}
               >
-                <Navigation size={14} /> Open in Maps
+                <Navigation size={14} /> {getTranslation(language, 'openInMaps')}
               </button>
             )}
             

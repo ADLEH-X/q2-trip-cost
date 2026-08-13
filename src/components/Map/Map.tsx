@@ -20,9 +20,37 @@ interface MapProps {
   activeRoute?: RouteInfo;
   isLoaded: boolean;
   isMockFallback?: boolean;
+  theme?: 'dark' | 'light';
 }
 
-export default function Map({ activeRoute, isLoaded = true, isMockFallback }: MapProps) {
+const darkMapStyles = [
+  { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a2e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#2d2d44' }] },
+  { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#4b5563' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#1f1f35' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2a40' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1a1a2e' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3b3b55' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1a1a2e' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1f1f35' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f0f1a' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#374151' }] },
+];
+
+const lightMapStyles = [
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d6e3' }] },
+  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f0eeeb' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0dcd7' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#d4cfc9' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+];
+
+export default function Map({ activeRoute, isLoaded = true, isMockFallback, theme = 'dark' }: MapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [decodedPath, setDecodedPath] = useState<google.maps.LatLng[]>([]);
   const polylinesRef = React.useRef<google.maps.Polyline[]>([]);
@@ -108,13 +136,7 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback }: Ma
           options={{
             disableDefaultUI: true,
             zoomControl: true,
-            styles: [
-              {
-                featureType: "poi",
-                elementType: "labels",
-                stylers: [{ visibility: "off" }]
-              }
-            ] // A bit cleaner
+            styles: theme === 'light' ? lightMapStyles : darkMapStyles
           }}
         >
           {decodedPath.length > 0 && (
