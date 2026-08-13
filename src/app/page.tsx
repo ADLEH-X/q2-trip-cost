@@ -24,6 +24,27 @@ import { calculateOneWayCost, rankAlternativeRoutes } from '@/lib/calculations';
 
 const LIBRARIES: ("places" | "geometry")[] = ["places", "geometry"];
 
+function getLocalizedFuelSource(source: string, language: Language): string {
+  if (!source) return '';
+  const lower = source.toLowerCase();
+  if (lower.includes('avrupa') || lower.includes('europe')) {
+    return getTranslation(language, 'sourceOpetEurope');
+  }
+  if (lower.includes('anadolu') || lower.includes('anatolia')) {
+    return getTranslation(language, 'sourceOpetAnatolia');
+  }
+  if (lower.includes('doviz') || lower.includes('döviz')) {
+    return getTranslation(language, 'sourceDovizFallback');
+  }
+  if (lower.includes('tahmin') || lower.includes('estimated') || lower.includes('referans') || lower.includes('reference')) {
+    return getTranslation(language, 'sourceEstimated');
+  }
+  if (lower.includes('demo')) {
+    return getTranslation(language, 'sourceDemo');
+  }
+  return source;
+}
+
 // Wrapper component to only call useLoadScript if we have an API key.
 // This prevents console errors when the user is testing the UI visually without an API key.
 export default function Home() {
@@ -235,7 +256,7 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
                   <div className="flex items-center gap-2">
                     <span className={`w-1.5 h-1.5 rounded-full ${fuelPrice.status === 'LIVE' ? 'bg-emerald-400 animate-pulse' : fuelPrice.status === 'ESTIMATED' ? 'bg-amber-400' : 'bg-neutral-500'}`}></span>
                     <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
-                      {fuelPrice.source}
+                      {getLocalizedFuelSource(fuelPrice.source, language)}
                     </span>
                   </div>
                   <span className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-400 transition-colors">

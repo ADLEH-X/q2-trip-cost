@@ -64,6 +64,11 @@ export const translations = {
     clearHistoryTitle: 'Geçmişi temizle',
     setToHome: 'Ev olarak ayarla',
     swapLocations: 'Konumları değiştir',
+    sourceOpetEurope: 'OPET (İstanbul Avrupa)',
+    sourceOpetAnatolia: 'OPET (İstanbul Anadolu)',
+    sourceDovizFallback: 'doviz.com (Yedek Kaynak)',
+    sourceEstimated: 'Sabit tahmin (OPET referansı)',
+    sourceDemo: 'Demo Örnek Veri',
   },
   en: {
     from: 'From?',
@@ -130,6 +135,11 @@ export const translations = {
     clearHistoryTitle: 'Clear history',
     setToHome: 'Set to home',
     swapLocations: 'Swap locations',
+    sourceOpetEurope: 'OPET (Istanbul Europe)',
+    sourceOpetAnatolia: 'OPET (Istanbul Anatolia)',
+    sourceDovizFallback: 'doviz.com (Fallback)',
+    sourceEstimated: 'Estimated (OPET reference)',
+    sourceDemo: 'Demo Sample Data',
   }
 };
 

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // OPET internal API — Province codes for Istanbul:
 // 934 = İSTANBUL AVRUPA (European side)
 // 34  = İSTANBUL ANADOLU (Asian side)
@@ -51,6 +54,10 @@ function extractPricesFromOpet(districts: any[]): { petrol: number; diesel: numb
   }
 }
 
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const side = searchParams.get('side') === 'ANATOLIA' ? 'ANATOLIA' : 'EUROPE';
@@ -58,10 +65,10 @@ export async function GET(request: Request) {
 
   // Return cache if fresh
   if (cachedData && (now - lastFetchTime < CACHE_DURATION_MS)) {
-    return NextResponse.json({
-      ...cachedData,
-      status: 'CACHED',
-    });
+    return NextResponse.json(
+      { ...cachedData, status: 'CACHED' },
+      { headers: CACHE_HEADERS }
+    );
   }
 
   // --- Try OPET API (Primary Source) ---
@@ -73,8 +80,6 @@ export async function GET(request: Request) {
         'Accept': 'application/json',
         'Referer': 'https://www.opet.com.tr/',
       },
-      // Next.js cache: revalidate every hour
-      next: { revalidate: 3600 },
     });
 
     if (!res.ok) throw new Error(`OPET API returned ${res.status}`);
@@ -94,7 +99,10 @@ export async function GET(request: Request) {
     cachedData = result;
     lastFetchTime = now;
 
-    return NextResponse.json({ ...result, status: 'LIVE' });
+    return NextResponse.json(
+      { ...result, status: 'LIVE' },
+      { headers: CACHE_HEADERS }
+    );
 
   } catch (primaryError) {
     console.error('OPET API failed:', primaryError);
@@ -118,9 +126,6 @@ export async function GET(request: Request) {
       const petrolMatch = html.match(/Kurşunsuz[^<]*95[^<]*<[^>]*>([^<]*?(\d{2}[,\.]\d{2})[^<]*?)<\/td>/i);
       const motorinMatch = html.match(/Motorin[^<]*<[^>]*>([^<]*?(\d{2}[,\.]\d{2})[^<]*?)<\/td>/i);
 
-      // Simpler regex to just find price numbers near fuel keywords
-      const allPrices = html.match(/(\d{2})[,\.](\d{2})/g);
-
       let petrol = 0, diesel = 0;
 
       if (petrolMatch) {
@@ -142,7 +147,10 @@ export async function GET(request: Request) {
         };
         cachedData = result;
         lastFetchTime = now;
-        return NextResponse.json({ ...result, status: 'LIVE' });
+        return NextResponse.json(
+          { ...result, status: 'LIVE' },
+          { headers: CACHE_HEADERS }
+        );
       }
 
       throw new Error('doviz.com prices out of expected range or not found');
@@ -152,7 +160,10 @@ export async function GET(request: Request) {
 
       // --- Final fallback: return stale cache or realistic estimate ---
       if (cachedData) {
-        return NextResponse.json({ ...cachedData, status: 'CACHED_STALE' });
+        return NextResponse.json(
+          { ...cachedData, status: 'CACHED_STALE' },
+          { headers: CACHE_HEADERS }
+        );
       }
 
       // Last resort: best estimate based on current market (updated August 2026)
@@ -162,7 +173,10 @@ export async function GET(request: Request) {
         source: 'Sabit tahmin (OPET referansı)',
         retrievedAt: new Date().toISOString(),
       };
-      return NextResponse.json({ ...estimate, status: 'ESTIMATED' });
+      return NextResponse.json(
+        { ...estimate, status: 'ESTIMATED' },
+        { headers: CACHE_HEADERS }
+      );
     }
   }
 }
