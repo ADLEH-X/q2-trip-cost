@@ -1,9 +1,10 @@
 'use client';
+import { buildDirectionsUrl } from '@/utils/googleMaps';
 
 import React from 'react';
 import { TripCostCalculation, RouteCalculation } from '@/lib/providers/interfaces';
 import { getTranslation, Language } from '@/lib/translations';
-import { Zap, CheckCircle2, Fuel, Coins } from 'lucide-react';
+import { Zap, CheckCircle2, Fuel, Coins, Navigation } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -89,6 +90,16 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
                 <span className="font-medium text-neutral-300">{calc.tollCostTRY.toFixed(0)} TL</span>
               </div>
             </div>
+            {isSelected && (
+              <button
+                type="button"
+                onClick={() => window.open(buildDirectionsUrl(route), '_blank')}
+                className="flex items-center gap-1 px-3 py-1 mt-2 text-sm text-white bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+                title="Open this route in Google Maps"
+              >
+                <Navigation size={14} /> Open in Maps
+              </button>
+            )}
             
             {calc.tollCostTRY === 0 && !calc.isTollFree && (
               <div className="mt-3 text-xs text-amber-500 bg-amber-500/10 px-3 py-2 rounded-xl border border-amber-500/20 backdrop-blur-md">

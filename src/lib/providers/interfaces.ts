@@ -13,6 +13,8 @@ export interface RouteInfo {
   polyline: string;
   trafficIntervals?: TrafficInterval[];
   warnings: string[];
+  originPlaceId?: string;
+  destinationPlaceId?: string;
 }
 
 export interface TollEstimate {

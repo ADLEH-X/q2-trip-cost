@@ -97,7 +97,9 @@ if (
         trafficDurationMins: Math.ceil(durationS / 60),
         polyline: route.polyline?.encodedPolyline || '',
         trafficIntervals,
-        warnings: [] 
+        warnings: [],
+        originPlaceId,
+        destinationPlaceId
       };
 
       // Parse tolls (Native Google API fallback + Custom Turkey Logic)
