@@ -51,7 +51,35 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
       );
     }
   };
-
+  const handleSetCurrentLocation = () => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          if (isLoaded && window.google) {
+            const geocoder = new google.maps.Geocoder();
+            const latlng = { lat: latitude, lng: longitude };
+            geocoder.geocode({ location: latlng }, (results, status) => {
+              if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
+                setOriginText(results[0].formatted_address);
+                if (results[0].place_id) {
+                  setOriginPlaceId(results[0].place_id);
+                }
+              } else {
+                console.error('Geocode error', status);
+              }
+            });
+          }
+        },
+        (error) => {
+          console.error('Geolocation error', error);
+          alert('Unable to retrieve your location.');
+        }
+      );
+    } else {
+      alert('Geolocation not supported.');
+    }
+  };
   const onOriginLoad = (autocomplete: google.maps.places.Autocomplete) => {
     originAutocompleteRef.current = autocomplete;
     autocomplete.setComponentRestrictions({ country: 'TR' });
@@ -151,6 +179,14 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
               className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
             >
               <Home size={18} />
+            </button>
+                      <button
+              type="button"
+              onClick={handleSetCurrentLocation}
+              title="Use current location"
+              className="absolute right-10 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
+            >
+              <Navigation size={18} />
             </button>
           </div>
 
