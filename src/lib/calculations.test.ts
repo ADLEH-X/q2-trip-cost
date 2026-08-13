@@ -11,6 +11,8 @@ describe('Calculation Engine', () => {
 
   const mockFuel: FuelPriceInfo = {
     priceTRYPerLiter: 40,
+    petrolPricePerLiter: 40,
+    dieselPricePerLiter: 42,
     currency: 'TRY',
     source: 'Test Provider',
     retrievedAt: new Date().toISOString(),

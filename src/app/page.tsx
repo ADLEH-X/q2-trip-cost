@@ -69,11 +69,18 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
     if (!vs || vs.consumptionL100km === 0) {
       setShowSettings(true); 
     }
-    fuelPriceProvider.getCurrentPrice().then(setFuelPrice);
+    fuelPriceProvider.getCurrentPrice('EUROPE', vs?.fuelType ?? 'petrol').then(setFuelPrice);
     setTripHistory(storage.getHistory());
     storage.applyTheme();
     setTheme(storage.getTheme());
   }, []);
+
+  // Re-fetch fuel price whenever vehicle fuel type changes
+  useEffect(() => {
+    if (vehicleSettings) {
+      fuelPriceProvider.getCurrentPrice('EUROPE', vehicleSettings.fuelType).then(setFuelPrice);
+    }
+  }, [vehicleSettings?.fuelType]);
 
   const handleTripSubmit = async (originId: string, destinationId: string, isRoundTrip: boolean, originText?: string, destinationText?: string) => {
     if (!vehicleSettings || !fuelPrice) return;
@@ -221,21 +228,46 @@ function AppContent({ isLoaded, loadError, apiKeyMissing }: { isLoaded: boolean,
               }}
             />
 
+
             {fuelPrice && (
-              <div className="backdrop-blur-md bg-white/5 rounded-2xl px-5 py-4 flex items-center justify-between text-xs text-neutral-400 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer" onClick={() => setShowSettings(true)}>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium text-white text-sm tracking-wide">
-                    {fuelPrice.priceTRYPerLiter.toFixed(2)} TL/L <span className="opacity-50 font-normal">({(fuelPrice as any).fuelType === 'diesel' ? getTranslation(language, 'diesel') : getTranslation(language, 'petrol')})</span>
-                  </span>
-                  <span className={`text-[10px] ${fuelPrice.status === 'CACHED' ? 'text-amber-500' : 'text-neutral-500'} tracking-wider uppercase`}>
-                    {getTranslation(language, 'dataLabel')}: {fuelPrice.source} • {new Date(fuelPrice.retrievedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <div className="backdrop-blur-md bg-white/5 rounded-2xl px-5 py-4 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer" onClick={() => setShowSettings(true)}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full ${fuelPrice.status === 'LIVE' ? 'bg-emerald-400 animate-pulse' : fuelPrice.status === 'ESTIMATED' ? 'bg-amber-400' : 'bg-neutral-500'}`}></span>
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
+                      {fuelPrice.source}
+                    </span>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-400 transition-colors">
+                    {getTranslation(language, 'change')}
                   </span>
                 </div>
-                <div className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-400 transition-colors">
-                  {getTranslation(language, 'change')}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Benzin */}
+                  <div className={`rounded-xl px-3 py-2.5 flex flex-col gap-0.5 border transition-colors ${vehicleSettings?.fuelType === 'petrol' ? 'bg-red-600/10 border-red-600/20' : 'bg-white/5 border-white/5'}`}>
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold">
+                      {getTranslation(language, 'petrol')} 95
+                    </span>
+                    <span className={`text-base font-semibold tracking-tight ${vehicleSettings?.fuelType === 'petrol' ? 'text-white' : 'text-neutral-400'}`}>
+                      {(fuelPrice.petrolPricePerLiter ?? fuelPrice.priceTRYPerLiter).toFixed(2)} <span className="text-xs opacity-60">TL/L</span>
+                    </span>
+                  </div>
+                  {/* Motorin */}
+                  <div className={`rounded-xl px-3 py-2.5 flex flex-col gap-0.5 border transition-colors ${vehicleSettings?.fuelType === 'diesel' ? 'bg-red-600/10 border-red-600/20' : 'bg-white/5 border-white/5'}`}>
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold">
+                      {getTranslation(language, 'diesel')}
+                    </span>
+                    <span className={`text-base font-semibold tracking-tight ${vehicleSettings?.fuelType === 'diesel' ? 'text-white' : 'text-neutral-400'}`}>
+                      {(fuelPrice.dieselPricePerLiter ?? fuelPrice.priceTRYPerLiter).toFixed(2)} <span className="text-xs opacity-60">TL/L</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-[10px] text-neutral-600 tracking-wide">
+                  {getTranslation(language, 'dataLabel')}: {new Date(fuelPrice.retrievedAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             )}
+
             
             <div className="md:hidden h-56 w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg">
               <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} theme={theme} />

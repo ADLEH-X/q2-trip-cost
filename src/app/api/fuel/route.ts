@@ -1,62 +1,168 @@
 import { NextResponse } from 'next/server';
-import * as cheerio from 'cheerio';
 
-// Cache for 6 hours
-let cachedFuelData: any = null;
+// OPET internal API — Province codes for Istanbul:
+// 934 = İSTANBUL AVRUPA (European side)
+// 34  = İSTANBUL ANADOLU (Asian side)
+const OPET_EUROPE_URL = 'https://api.opet.com.tr/api/fuelprices/prices?ProvinceCode=934';
+const OPET_ANADOLU_URL = 'https://api.opet.com.tr/api/fuelprices/prices?ProvinceCode=34';
+
+// OPET product codes
+const BENZIN_CODE = 'A100';       // Kurşunsuz Benzin 95
+const MOTORIN_CODE = 'A121';      // Motorin (standard/UltraForce)
+const MOTORIN_ECO_CODE = 'A128';  // Motorin EcoForce (same price usually)
+
+// Cache for 1 hour  
+let cachedData: {
+  petrol: number;
+  diesel: number;
+  source: string;
+  retrievedAt: string;
+} | null = null;
 let lastFetchTime = 0;
-const CACHE_DURATION_MS = 6 * 60 * 60 * 1000; 
+const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
-export async function GET() {
+function extractPricesFromOpet(districts: any[]): { petrol: number; diesel: number } | null {
+  try {
+    // Average across all districts (prices are usually identical)
+    let petrolSum = 0, petrolCount = 0;
+    let dieselSum = 0, dieselCount = 0;
+
+    for (const district of districts) {
+      for (const price of district.prices || []) {
+        if (price.productCode === BENZIN_CODE && price.amount > 0) {
+          petrolSum += price.amount;
+          petrolCount++;
+        }
+        if ((price.productCode === MOTORIN_CODE || price.productCode === MOTORIN_ECO_CODE) && price.amount > 0) {
+          dieselSum += price.amount;
+          dieselCount++;
+        }
+      }
+    }
+
+    if (petrolCount === 0 || dieselCount === 0) return null;
+
+    return {
+      petrol: Math.round((petrolSum / petrolCount) * 100) / 100,
+      diesel: Math.round((dieselSum / dieselCount) * 100) / 100,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const side = searchParams.get('side') === 'ANATOLIA' ? 'ANATOLIA' : 'EUROPE';
   const now = Date.now();
-  
-  if (cachedFuelData && (now - lastFetchTime < CACHE_DURATION_MS)) {
+
+  // Return cache if fresh
+  if (cachedData && (now - lastFetchTime < CACHE_DURATION_MS)) {
     return NextResponse.json({
-      ...cachedFuelData,
+      ...cachedData,
       status: 'CACHED',
-      retrievedAt: new Date(lastFetchTime).toISOString()
     });
   }
 
+  // --- Try OPET API (Primary Source) ---
   try {
-    // Attempting to scrape Petrol Ofisi or OPET. 
-    // We'll use a reliable fallback if scraping fails.
-    // For demonstration, we'll try scraping a generic fuel price site or return a fallback.
-    
-    // In a real production app we'd target an exact API or HTML structure. 
-    // Example: Scrape a public fuel price aggregator.
-    
-    // Since scraping can be fragile without a known stable endpoint, we will simulate the 
-    // exact logic of scraping an HTML table, but if it fails, fallback safely.
-    
-    // Fallback logic for safety
-    const fetchedData = {
-      priceTRYPerLiter: 43.15, // Realistic Istanbul average
-      currency: 'TRY',
-      source: 'OPET (Simulated Server Scrape)',
-      status: 'LIVE',
-      side: 'EUROPE'
-    };
-
-    cachedFuelData = fetchedData;
-    lastFetchTime = now;
-
-    return NextResponse.json({
-      ...fetchedData,
-      retrievedAt: new Date(lastFetchTime).toISOString()
+    const url = side === 'ANATOLIA' ? OPET_ANADOLU_URL : OPET_EUROPE_URL;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://www.opet.com.tr/',
+      },
+      // Next.js cache: revalidate every hour
+      next: { revalidate: 3600 },
     });
 
-  } catch (error) {
-    console.error('Failed to fetch fuel prices:', error);
+    if (!res.ok) throw new Error(`OPET API returned ${res.status}`);
     
-    // Return cached if available, even if stale
-    if (cachedFuelData) {
-      return NextResponse.json({
-        ...cachedFuelData,
-        status: 'CACHED_STALE',
-        retrievedAt: new Date(lastFetchTime).toISOString()
-      });
-    }
+    const districts = await res.json();
+    const prices = extractPricesFromOpet(districts);
 
-    return NextResponse.json({ error: 'Failed to fetch fuel prices and no cache available.' }, { status: 500 });
+    if (!prices) throw new Error('Could not parse OPET price data');
+
+    const result = {
+      petrol: prices.petrol,
+      diesel: prices.diesel,
+      source: `OPET (${side === 'ANATOLIA' ? 'İstanbul Anadolu' : 'İstanbul Avrupa'})`,
+      retrievedAt: new Date().toISOString(),
+    };
+
+    cachedData = result;
+    lastFetchTime = now;
+
+    return NextResponse.json({ ...result, status: 'LIVE' });
+
+  } catch (primaryError) {
+    console.error('OPET API failed:', primaryError);
+
+    // --- Fallback: doviz.com HTML scrape ---
+    try {
+      const res = await fetch('https://www.doviz.com/akaryakit-fiyatlari', {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'tr-TR,tr;q=0.9',
+        },
+      });
+
+      if (!res.ok) throw new Error(`doviz.com returned ${res.status}`);
+
+      const html = await res.text();
+
+      // Parse prices from HTML — look for price pattern like "71,45" or "71.45"
+      // doviz.com uses Turkish locale: commas as decimal separator
+      const petrolMatch = html.match(/Kurşunsuz[^<]*95[^<]*<[^>]*>([^<]*?(\d{2}[,\.]\d{2})[^<]*?)<\/td>/i);
+      const motorinMatch = html.match(/Motorin[^<]*<[^>]*>([^<]*?(\d{2}[,\.]\d{2})[^<]*?)<\/td>/i);
+
+      // Simpler regex to just find price numbers near fuel keywords
+      const allPrices = html.match(/(\d{2})[,\.](\d{2})/g);
+
+      let petrol = 0, diesel = 0;
+
+      if (petrolMatch) {
+        const raw = petrolMatch[2].replace(',', '.');
+        petrol = parseFloat(raw);
+      }
+      if (motorinMatch) {
+        const raw = motorinMatch[2].replace(',', '.');
+        diesel = parseFloat(raw);
+      }
+
+      // Validate prices are in realistic range for Turkey (40–120 TL/L)
+      if (petrol > 40 && petrol < 120 && diesel > 40 && diesel < 120) {
+        const result = {
+          petrol,
+          diesel,
+          source: 'doviz.com (fallback)',
+          retrievedAt: new Date().toISOString(),
+        };
+        cachedData = result;
+        lastFetchTime = now;
+        return NextResponse.json({ ...result, status: 'LIVE' });
+      }
+
+      throw new Error('doviz.com prices out of expected range or not found');
+
+    } catch (fallbackError) {
+      console.error('doviz.com fallback failed:', fallbackError);
+
+      // --- Final fallback: return stale cache or realistic estimate ---
+      if (cachedData) {
+        return NextResponse.json({ ...cachedData, status: 'CACHED_STALE' });
+      }
+
+      // Last resort: best estimate based on current market (updated August 2026)
+      const estimate = {
+        petrol: 71.45,
+        diesel: 79.69,
+        source: 'Sabit tahmin (OPET referansı)',
+        retrievedAt: new Date().toISOString(),
+      };
+      return NextResponse.json({ ...estimate, status: 'ESTIMATED' });
+    }
   }
 }

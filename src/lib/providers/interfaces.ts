@@ -35,12 +35,15 @@ export interface RouteCalculation {
 }
 
 export interface FuelPriceInfo {
-  priceTRYPerLiter: number;
+  priceTRYPerLiter: number;   // Price for the active fuel type
+  petrolPricePerLiter?: number;
+  dieselPricePerLiter?: number;
   currency: string;
   source: string;
   retrievedAt: string;
-  status: 'LIVE' | 'CACHED' | 'MANUAL';
+  status: 'LIVE' | 'CACHED' | 'MANUAL' | 'CACHED_STALE' | 'ESTIMATED';
   side?: 'EUROPE' | 'ANATOLIA';
+  fuelType?: 'petrol' | 'diesel';
 }
 
 export interface VehicleSettings {
@@ -75,5 +78,5 @@ export interface TollProvider {
 }
 
 export interface FuelPriceProvider {
-  getCurrentPrice(side?: 'EUROPE' | 'ANATOLIA'): Promise<FuelPriceInfo>;
+  getCurrentPrice(side?: 'EUROPE' | 'ANATOLIA', fuelType?: 'petrol' | 'diesel'): Promise<FuelPriceInfo>;
 }
