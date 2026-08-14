@@ -92,7 +92,10 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
             </div>
             {isSelected && (
               <a
-                href={buildDirectionsUrl(route)}
+                href={buildDirectionsUrl(route, {
+                  allRoutes: routes.map((r) => r.route),
+                  isTollFree: calc.isTollFree
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}

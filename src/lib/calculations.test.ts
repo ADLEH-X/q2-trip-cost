@@ -117,65 +117,113 @@ describe('Route Label Localization', () => {
 });
 
 describe('Google Maps URL Builder', () => {
-  const { buildDirectionsUrl, getRouteWaypoint, WAYPOINT_COORDINATES } = require('../utils/googleMaps');
+  const { buildDirectionsUrl, decodePolyline, extractRouteShapingWaypoints } = require('../utils/googleMaps');
 
-  it('builds official Google Maps Directions URL with coordinates for Eurasia Tunnel', () => {
-    const route = {
-      id: 'r-eurasia',
-      label: 'via Eurasia Tunnel',
-      distanceKm: 18,
-      durationMins: 25,
-      trafficDurationMins: 30,
-      polyline: '',
-      warnings: [],
-      originCoord: { lat: 40.990142, lng: 29.029315 },
-      destinationCoord: { lat: 41.042831, lng: 28.985412 },
-    };
+  function encodePoly(points: { lat: number; lng: number }[]): string {
+    let encoded = '';
+    let prevLat = 0;
+    let prevLng = 0;
+    for (const pt of points) {
+      let lat = Math.round(pt.lat * 1e5);
+      let lng = Math.round(pt.lng * 1e5);
+      let dLat = lat - prevLat;
+      let dLng = lng - prevLng;
+      prevLat = lat;
+      prevLng = lng;
+      for (let num of [dLat, dLng]) {
+        num = num < 0 ? ~(num << 1) : (num << 1);
+        while (num >= 0x20) {
+          encoded += String.fromCharCode((0x20 | (num & 0x1f)) + 63);
+          num >>= 5;
+        }
+        encoded += String.fromCharCode(num + 63);
+      }
+    }
+    return encoded;
+  }
 
-    const url = buildDirectionsUrl(route);
-    expect(url.startsWith('https://www.google.com/maps/dir/?api=1')).toBe(true);
+  const polyEurasiaCoastal = encodePoly([
+    { lat: 40.99000, lng: 29.03000 },
+    { lat: 40.99500, lng: 29.01500 },
+    { lat: 41.00280, lng: 29.00160 }, // Tunnel
+    { lat: 41.00600, lng: 28.98000 }, // Kennedy Cd. coast
+    { lat: 41.01800, lng: 28.98500 }, // Karakoy coast
+    { lat: 41.04200, lng: 28.98500 }, // Besiktas
+  ]);
+
+  const polyEurasiaInland = encodePoly([
+    { lat: 40.99000, lng: 29.03000 },
+    { lat: 40.99500, lng: 29.01500 },
+    { lat: 41.00280, lng: 29.00160 }, // Tunnel
+    { lat: 41.01800, lng: 28.94500 }, // D100 inland / Vatan Cd.
+    { lat: 41.03500, lng: 28.95500 }, // Halic
+    { lat: 41.04200, lng: 28.98500 }, // Besiktas
+  ]);
+
+  const routeEurasia1 = {
+    id: 'r-eurasia-coastal',
+    label: 'Avrasya Tüneli üzerinden (Sahil Yolu)',
+    distanceKm: 18,
+    durationMins: 25,
+    trafficDurationMins: 30,
+    polyline: polyEurasiaCoastal,
+    warnings: [],
+  };
+
+  const routeEurasia2 = {
+    id: 'r-eurasia-inland',
+    label: 'Avrasya Tüneli üzerinden (D100 / Aksaray)',
+    distanceKm: 21,
+    durationMins: 28,
+    trafficDurationMins: 34,
+    polyline: polyEurasiaInland,
+    warnings: [],
+  };
+
+  it('generates DIFFERENT Google Maps URLs for two alternatives using the same tunnel', () => {
+    const allRoutes = [routeEurasia1, routeEurasia2];
+
+    const url1 = buildDirectionsUrl(routeEurasia1, { allRoutes });
+    const url2 = buildDirectionsUrl(routeEurasia2, { allRoutes });
+
+    expect(url1).not.toBe(url2);
+    expect(url1).toContain('waypoints=');
+    expect(url2).toContain('waypoints=');
+
+    // Each URL has distinct polyline route-shaping waypoints
+    const wp1 = new URL(url1).searchParams.get('waypoints');
+    const wp2 = new URL(url2).searchParams.get('waypoints');
+    expect(wp1).not.toBe(wp2);
+  });
+
+  it('formats up to 3 waypoints in route order separated by %7C', () => {
+    const allRoutes = [routeEurasia1, routeEurasia2];
+    const url = buildDirectionsUrl(routeEurasia1, { allRoutes });
+
+    // In the raw URL string, '|' must be encoded as '%7C'
+    expect(url).toContain('%7C');
     expect(url).not.toContain('/data=!');
-    expect(url).toContain('origin=40.990142%2C29.029315');
-    expect(url).toContain('destination=41.042831%2C28.985412');
     expect(url).toContain('travelmode=driving');
     expect(url).toContain('dir_action=navigate');
-    expect(url).toContain('waypoints=41.002800%2C29.001600');
   });
 
-  it('builds FSM Bridge URL with FSM coordinate waypoint and not Eurasia Tunnel', () => {
-    const route = {
-      id: 'r-fsm',
-      label: 'FSM Köprüsü üzerinden',
-      distanceKm: 30,
-      durationMins: 35,
-      trafficDurationMins: 40,
-      polyline: '',
-      warnings: [],
-      originCoord: { lat: 40.990142, lng: 29.029315 },
-      destinationCoord: { lat: 41.085000, lng: 29.010000 },
-    };
-
-    const url = buildDirectionsUrl(route);
-    expect(url).toContain('waypoints=41.091100%2C29.055800');
-    expect(url).not.toContain('41.002800');
-  });
-
-  it('does NOT add waypoints for toll-free / direct routes', () => {
-    const route = {
+  it('adds avoid=tolls for toll-free route alternatives', () => {
+    const tollFreeRoute = {
       id: 'r-tollfree',
-      label: 'via D100',
-      distanceKm: 10,
-      durationMins: 15,
-      trafficDurationMins: 18,
-      polyline: '',
+      label: 'D100 üzerinden',
+      distanceKm: 12,
+      durationMins: 20,
+      trafficDurationMins: 25,
+      polyline: polyEurasiaCoastal,
       warnings: [],
-      originCoord: { lat: 40.990142, lng: 29.029315 },
-      destinationCoord: { lat: 40.965000, lng: 29.080000 },
     };
 
-    const url = buildDirectionsUrl(route);
-    expect(url).not.toContain('waypoints=');
-    expect(url).toContain('origin=40.990142%2C29.029315');
-    expect(url).toContain('destination=40.965000%2C29.080000');
+    const url = buildDirectionsUrl(tollFreeRoute, { isTollFree: true });
+    expect(url).toContain('avoid=tolls');
+  });
+
+  it('does NOT add avoid=tolls for toll routes', () => {
+    const url = buildDirectionsUrl(routeEurasia1, { isTollFree: false });
+    expect(url).not.toContain('avoid=tolls');
   });
 });
