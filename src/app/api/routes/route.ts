@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     };
 
     // The field mask is crucial for Routes API
-    const fieldMask = 'routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.encodedPolyline,routes.travelAdvisory,routes.routeLabels,routes.description,routes.legs.steps';
+    const fieldMask = 'routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.encodedPolyline,routes.travelAdvisory,routes.routeLabels,routes.description,routes.legs.steps,routes.legs.startLocation,routes.legs.endLocation';
 
     const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',

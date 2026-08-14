@@ -115,3 +115,67 @@ describe('Route Label Localization', () => {
     expect(localizeRouteLabel('via D020 (KGM Toll)', 'en')).toBe('via D020 (KGM Toll)');
   });
 });
+
+describe('Google Maps URL Builder', () => {
+  const { buildDirectionsUrl, getRouteWaypoint, WAYPOINT_COORDINATES } = require('../utils/googleMaps');
+
+  it('builds official Google Maps Directions URL with coordinates for Eurasia Tunnel', () => {
+    const route = {
+      id: 'r-eurasia',
+      label: 'via Eurasia Tunnel',
+      distanceKm: 18,
+      durationMins: 25,
+      trafficDurationMins: 30,
+      polyline: '',
+      warnings: [],
+      originCoord: { lat: 40.990142, lng: 29.029315 },
+      destinationCoord: { lat: 41.042831, lng: 28.985412 },
+    };
+
+    const url = buildDirectionsUrl(route);
+    expect(url.startsWith('https://www.google.com/maps/dir/?api=1')).toBe(true);
+    expect(url).not.toContain('/data=!');
+    expect(url).toContain('origin=40.990142%2C29.029315');
+    expect(url).toContain('destination=41.042831%2C28.985412');
+    expect(url).toContain('travelmode=driving');
+    expect(url).toContain('dir_action=navigate');
+    expect(url).toContain('waypoints=41.002800%2C29.001600');
+  });
+
+  it('builds FSM Bridge URL with FSM coordinate waypoint and not Eurasia Tunnel', () => {
+    const route = {
+      id: 'r-fsm',
+      label: 'FSM Köprüsü üzerinden',
+      distanceKm: 30,
+      durationMins: 35,
+      trafficDurationMins: 40,
+      polyline: '',
+      warnings: [],
+      originCoord: { lat: 40.990142, lng: 29.029315 },
+      destinationCoord: { lat: 41.085000, lng: 29.010000 },
+    };
+
+    const url = buildDirectionsUrl(route);
+    expect(url).toContain('waypoints=41.091100%2C29.055800');
+    expect(url).not.toContain('41.002800');
+  });
+
+  it('does NOT add waypoints for toll-free / direct routes', () => {
+    const route = {
+      id: 'r-tollfree',
+      label: 'via D100',
+      distanceKm: 10,
+      durationMins: 15,
+      trafficDurationMins: 18,
+      polyline: '',
+      warnings: [],
+      originCoord: { lat: 40.990142, lng: 29.029315 },
+      destinationCoord: { lat: 40.965000, lng: 29.080000 },
+    };
+
+    const url = buildDirectionsUrl(route);
+    expect(url).not.toContain('waypoints=');
+    expect(url).toContain('origin=40.990142%2C29.029315');
+    expect(url).toContain('destination=40.965000%2C29.080000');
+  });
+});

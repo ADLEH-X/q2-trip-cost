@@ -91,14 +91,18 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
               </div>
             </div>
             {isSelected && (
-              <button
-                type="button"
-                onClick={() => window.open(buildDirectionsUrl(route), '_blank')}
-                className="flex items-center gap-1 px-3 py-1 mt-2 text-sm text-white bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+              <a
+                href={buildDirectionsUrl(route)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 mt-3 text-xs font-semibold text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 hover:border-white/20 shadow-sm"
                 title={getTranslation(language, 'openInMapsTitle')}
+                aria-label={getTranslation(language, 'openInMapsTitle')}
               >
-                <Navigation size={14} /> {getTranslation(language, 'openInMaps')}
-              </button>
+                <Navigation size={14} className="text-red-500 shrink-0" />
+                <span>{getTranslation(language, 'openInMaps')}</span>
+              </a>
             )}
             
             {calc.tollCostTRY === 0 && !calc.isTollFree && (

@@ -87,6 +87,12 @@ if (
         customLabel = `via ${route.description}`;
       }
 
+      const leg0 = route.legs?.[0];
+      const startLoc = leg0?.startLocation?.latLng;
+      const endLoc = leg0?.endLocation?.latLng;
+      const originCoord = startLoc ? { lat: Number(startLoc.latitude), lng: Number(startLoc.longitude) } : undefined;
+      const destinationCoord = endLoc ? { lat: Number(endLoc.latitude), lng: Number(endLoc.longitude) } : undefined;
+
       const routeInfo = {
         id: `route-${index}`,
         label: customLabel || `Route ${String.fromCharCode(65 + index)}`,
@@ -97,7 +103,9 @@ if (
         trafficIntervals,
         warnings: [],
         originPlaceId,
-        destinationPlaceId
+        destinationPlaceId,
+        originCoord,
+        destinationCoord
       };
 
       // Parse tolls (Native Google API fallback + Custom Turkey Logic)

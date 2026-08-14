@@ -4,6 +4,11 @@ export interface TrafficInterval {
   speed: 'NORMAL' | 'SLOW' | 'TRAFFIC_JAM';
 }
 
+export interface LatLngLiteral {
+  lat: number;
+  lng: number;
+}
+
 export interface RouteInfo {
   id: string;
   label: string;
@@ -15,6 +20,10 @@ export interface RouteInfo {
   warnings: string[];
   originPlaceId?: string;
   destinationPlaceId?: string;
+  originCoord?: LatLngLiteral;
+  destinationCoord?: LatLngLiteral;
+  originText?: string;
+  destinationText?: string;
 }
 
 export interface TollEstimate {
