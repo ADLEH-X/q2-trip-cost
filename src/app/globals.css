@@ -42,13 +42,14 @@ body {
 /* Panels, cards, header — glass morphism becomes light frosted glass */
 [data-theme="light"] .bg-black\/40,
 [data-theme="light"] .bg-black\/80 {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
 }
 
 [data-theme="light"] .bg-white\/5,
 [data-theme="light"] .bg-white\/10 {
-  background-color: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Hover states */
@@ -62,12 +63,12 @@ body {
 [data-theme="light"] .border-white\/5,
 [data-theme="light"] .border-white\/10,
 [data-theme="light"] .border-white\/20 {
-  border-color: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 [data-theme="light"] .hover\:border-white\/20:hover,
 [data-theme="light"] .hover\:border-white\/15:hover {
-  border-color: rgba(0, 0, 0, 0.15) !important;
+  border-color: rgba(0, 0, 0, 0.22) !important;
 }
 
 /* Text color overrides */
@@ -89,11 +90,11 @@ body {
 }
 
 [data-theme="light"] .text-neutral-500 {
-  color: #a8a29e !important;
+  color: #78716c !important;
 }
 
 [data-theme="light"] .text-neutral-600 {
-  color: #a8a29e !important;
+  color: #78716c !important;
 }
 
 /* Selected route card in light mode */
@@ -122,13 +123,13 @@ body {
 /* Input fields */
 [data-theme="light"] input.bg-white\/5,
 [data-theme="light"] input[class*="bg-white/5"] {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  border-color: rgba(0, 0, 0, 0.12) !important;
+  background-color: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.18) !important;
   color: #1c1917 !important;
 }
 
 [data-theme="light"] input::placeholder {
-  color: #a8a29e !important;
+  color: #78716c !important;
 }
 
 /* Settings modal overlay */
@@ -149,8 +150,9 @@ body {
 
 /* Disabled button */
 [data-theme="light"] .disabled\:bg-white\/10:disabled {
-  background-color: rgba(0, 0, 0, 0.06) !important;
-  color: #a8a29e !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #78716c !important;
+  cursor: not-allowed;
 }
 
 /* Swap button */
@@ -170,7 +172,7 @@ body {
 }
 
 [data-theme="light"] .shadow-2xl {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* Red active toggle/tab */

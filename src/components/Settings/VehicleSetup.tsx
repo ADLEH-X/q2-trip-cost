@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { VehicleSettings } from '@/lib/providers/interfaces';
 import { storage } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
@@ -14,10 +14,49 @@ interface VehicleSetupProps {
 
 export default function VehicleSetup({ language, onSave, onClose }: VehicleSetupProps) {
   const [settings, setSettings] = useState<VehicleSettings | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSettings(storage.getVehicleSettings());
   }, []);
+
+  // Focus trap and Escape handler
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    // Focus first focusable element
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusables = dialog.querySelectorAll<HTMLElement>(focusableSelector);
+    if (focusables.length > 0) focusables[0].focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusableEls = dialog.querySelectorAll<HTMLElement>(focusableSelector);
+        if (focusableEls.length === 0) return;
+        const first = focusableEls[0];
+        const last = focusableEls[focusableEls.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (!settings) return null;
 
@@ -28,16 +67,23 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-dialog-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div ref={dialogRef} className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
         <button 
           onClick={onClose}
           className="absolute right-4 top-4 text-neutral-500 hover:text-white transition-colors"
+          aria-label={getTranslation(language, 'save') === 'Save' ? 'Close settings' : 'Ayarları kapat'}
         >
           <X size={20} />
         </button>
         
-        <h2 className="text-xl font-light text-white mb-6">{settings.carModel || getTranslation(language, 'vehicle')} {getTranslation(language, 'settings')}</h2>
+        <h2 id="settings-dialog-title" className="text-xl font-light text-white mb-6">{settings.carModel || getTranslation(language, 'vehicle')} {getTranslation(language, 'settings')}</h2>
         
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
@@ -85,7 +131,7 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
               <label className="text-sm font-medium text-neutral-400">
                 {getTranslation(language, 'consumption')} ({getTranslation(language, 'consumptionUnit')})
               </label>
-              <span className="text-[10px] text-neutral-600 uppercase tracking-widest font-bold">{getTranslation(language, 'wltpAverage')}</span>
+              <span className="text-xs text-neutral-500 uppercase tracking-widest font-bold">{getTranslation(language, 'wltpAverage')}</span>
             </div>
             <input 
               type="number"

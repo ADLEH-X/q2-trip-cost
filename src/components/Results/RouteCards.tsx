@@ -3,7 +3,7 @@ import { buildDirectionsUrl } from '@/utils/googleMaps';
 
 import React from 'react';
 import { TripCostCalculation, RouteCalculation } from '@/lib/providers/interfaces';
-import { getTranslation, Language } from '@/lib/translations';
+import { getTranslation, localizeRouteLabel, Language } from '@/lib/translations';
 import { Zap, CheckCircle2, Fuel, Coins, Navigation } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -50,7 +50,7 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
             
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div className="flex flex-col gap-1">
-                <span className="font-medium text-white text-lg tracking-wide">{route.label || `${getTranslation(language, 'routeLabel')} ${idx + 1}`}</span>
+                <span className="font-medium text-white text-lg tracking-wide">{localizeRouteLabel(route.label, language) || `${getTranslation(language, 'routeLabel')} ${idx + 1}`}</span>
                 <span className="text-xs text-neutral-400 font-light">
                   {(route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1)} {getTranslation(language, 'km')} • {Number(route.trafficDurationMins) * (isRoundTripActive ? 2 : 1)} {getTranslation(language, 'min')}
                 </span>
@@ -64,17 +64,17 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
 
             <div className="flex gap-2 mb-4 relative z-10">
               {calc.isCheapest && (
-                <span className="flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
                   <CheckCircle2 size={12} /> {getTranslation(language, 'cheapest')}
                 </span>
               )}
               {calc.isFastest && (
-                <span className="flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20">
+                <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20">
                   <Zap size={12} /> {getTranslation(language, 'fastest')}
                 </span>
               )}
               {calc.isTollFree && (
-                <span className="flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase bg-white/10 text-neutral-300 px-2.5 py-1 rounded-full border border-white/10">
+                <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-white/10 text-neutral-300 px-2.5 py-1 rounded-full border border-white/10">
                   {getTranslation(language, 'tollFree')}
                 </span>
               )}

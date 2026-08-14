@@ -42,12 +42,12 @@ export default function RecentTrips({ trips, onSelect, onClear, language }: Rece
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between px-1">
-        <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 flex items-center gap-1.5">
+        <span className="text-xs font-bold tracking-widest uppercase text-neutral-500 flex items-center gap-1.5">
           <Clock size={12} /> {getTranslation(language, 'recentTrips')}
         </span>
         <button
           onClick={onClear}
-          className="text-[10px] font-bold tracking-widest uppercase text-neutral-600 hover:text-red-500 transition-colors flex items-center gap-1"
+          className="text-xs font-bold tracking-widest uppercase text-neutral-600 hover:text-red-500 transition-colors flex items-center gap-1"
           title={getTranslation(language, 'clearHistoryTitle')}
         >
           <X size={10} /> {getTranslation(language, 'clearHistory')}
@@ -67,7 +67,7 @@ export default function RecentTrips({ trips, onSelect, onClear, language }: Rece
               <span className="text-sm text-white font-medium truncate">
                 {shortenAddress(trip.originText)} → {shortenAddress(trip.destinationText)}
               </span>
-              <span className="text-[10px] text-neutral-500 tracking-wide">
+              <span className="text-xs text-neutral-500 tracking-wide">
                 {timeAgo(trip.date, language)}
               </span>
             </div>

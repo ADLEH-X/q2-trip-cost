@@ -84,9 +84,7 @@ if (
 }
       // 3. Fallback to formatted route description
       if (!customLabel && route.description) {
-        // Replace Turkish characters with English equivalents
-        const trMap: Record<string, string> = {'ü':'u','Ü':'U','ğ':'g','Ğ':'G','ş':'s','Ş':'S','ç':'c','Ç':'C','ö':'o','Ö':'O','ı':'i','İ':'I'};
-        customLabel = `via ${route.description.replace(/[üÜğĞşŞçÇöÖıİ]/g, (c: string) => trMap[c] || c)}`;
+        customLabel = `via ${route.description}`;
       }
 
       const routeInfo = {

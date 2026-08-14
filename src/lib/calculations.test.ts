@@ -75,3 +75,43 @@ describe('Calculation Engine', () => {
     // Logic downstream must read status 'UNAVAILABLE' to warn the user, but the calc should not throw
   });
 });
+
+describe('Route Label Localization', () => {
+  const { localizeRouteLabel } = require('./translations');
+
+  it('localizes bridge and tunnel labels in Turkish and English', () => {
+    expect(localizeRouteLabel('via FSM Bridge', 'tr')).toBe('FSM Köprüsü üzerinden');
+    expect(localizeRouteLabel('via FSM Bridge', 'en')).toBe('via FSM Bridge');
+
+    expect(localizeRouteLabel('via 15 Temmuz Bridge', 'tr')).toBe('15 Temmuz Köprüsü üzerinden');
+    expect(localizeRouteLabel('via 15 Temmuz Bridge', 'en')).toBe('via 15 Temmuz Bridge');
+
+    expect(localizeRouteLabel('via Eurasia Tunnel', 'tr')).toBe('Avrasya Tüneli üzerinden');
+    expect(localizeRouteLabel('via Eurasia Tunnel', 'en')).toBe('via Eurasia Tunnel');
+
+    expect(localizeRouteLabel('via Osmangazi Bridge', 'tr')).toBe('Osmangazi Köprüsü üzerinden');
+    expect(localizeRouteLabel('via Osmangazi Bridge', 'en')).toBe('via Osmangazi Bridge');
+
+    expect(localizeRouteLabel('via Canakkale Bridge', 'tr')).toBe('1915 Çanakkale Köprüsü üzerinden');
+    expect(localizeRouteLabel('via Canakkale Bridge', 'en')).toBe('via 1915 Canakkale Bridge');
+  });
+
+  it('localizes highway and road codes in Turkish mode', () => {
+    expect(localizeRouteLabel('via D020', 'tr')).toBe('D020 üzerinden');
+    expect(localizeRouteLabel('via D020', 'en')).toBe('via D020');
+
+    expect(localizeRouteLabel('via O-7', 'tr')).toBe('O-7 üzerinden');
+    expect(localizeRouteLabel('via O-7', 'en')).toBe('via O-7');
+
+    expect(localizeRouteLabel('via Şile Otoyolu', 'tr')).toBe('Şile Otoyolu üzerinden');
+    expect(localizeRouteLabel('via Şile Otoyolu', 'en')).toBe('via Şile Otoyolu');
+  });
+
+  it('localizes generic route and KGM toll labels', () => {
+    expect(localizeRouteLabel('Route A', 'tr')).toBe('Rota A');
+    expect(localizeRouteLabel('Route A', 'en')).toBe('Route A');
+
+    expect(localizeRouteLabel('via D020 (KGM Toll)', 'tr')).toBe('D020 üzerinden (KGM Geçişi)');
+    expect(localizeRouteLabel('via D020 (KGM Toll)', 'en')).toBe('via D020 (KGM Toll)');
+  });
+});

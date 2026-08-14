@@ -163,31 +163,36 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10">
         <div className="relative flex flex-col gap-3">
           
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 z-10">
-              <Navigation size={18} strokeWidth={1.5} />
+          <div>
+            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1 block">{getTranslation(language, 'from')}</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 z-10">
+                <Navigation size={18} strokeWidth={1.5} />
+              </div>
+              {isLoaded ? (
+                <Autocomplete onLoad={onOriginLoad} onPlaceChanged={onOriginPlaceChanged} fields={['place_id', 'formatted_address', 'name']}>
+                  {renderOriginInput()}
+                </Autocomplete>
+              ) : renderOriginInput()}
+              <button 
+                type="button"
+                onClick={handleSetHome}
+                title={getTranslation(language, 'setToHome')}
+                aria-label={getTranslation(language, 'setToHome')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
+              >
+                <Home size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={handleSetCurrentLocation}
+                title={getTranslation(language, 'useCurrentLocation')}
+                aria-label={getTranslation(language, 'useCurrentLocation')}
+                className="absolute right-10 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
+              >
+                <Navigation size={18} />
+              </button>
             </div>
-            {isLoaded ? (
-              <Autocomplete onLoad={onOriginLoad} onPlaceChanged={onOriginPlaceChanged} fields={['place_id', 'formatted_address', 'name']}>
-                {renderOriginInput()}
-              </Autocomplete>
-            ) : renderOriginInput()}
-            <button 
-              type="button"
-              onClick={handleSetHome}
-              title={getTranslation(language, 'setToHome')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
-            >
-              <Home size={18} />
-            </button>
-                      <button
-              type="button"
-              onClick={handleSetCurrentLocation}
-              title={getTranslation(language, 'useCurrentLocation')}
-              className="absolute right-10 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
-            >
-              <Navigation size={18} />
-            </button>
           </div>
 
           <button
@@ -199,15 +204,18 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
             <ArrowDownUp size={16} strokeWidth={2} />
           </button>
 
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-600 z-10">
-              <MapPin size={18} strokeWidth={1.5} />
+          <div>
+            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1 block">{getTranslation(language, 'to')}</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-600 z-10">
+                <MapPin size={18} strokeWidth={1.5} />
+              </div>
+              {isLoaded ? (
+                <Autocomplete onLoad={onDestinationLoad} onPlaceChanged={onDestinationPlaceChanged} fields={['place_id', 'formatted_address', 'name']}>
+                  {renderDestinationInput()}
+                </Autocomplete>
+              ) : renderDestinationInput()}
             </div>
-            {isLoaded ? (
-              <Autocomplete onLoad={onDestinationLoad} onPlaceChanged={onDestinationPlaceChanged} fields={['place_id', 'formatted_address', 'name']}>
-                {renderDestinationInput()}
-              </Autocomplete>
-            ) : renderDestinationInput()}
           </div>
         </div>
 

@@ -148,3 +148,119 @@ export type Language = 'tr' | 'en';
 export function getTranslation(lang: Language, key: keyof typeof translations['tr']): string {
   return translations[lang][key] || translations['tr'][key] || key;
 }
+
+export function localizeRouteLabel(label: string, lang: Language): string {
+  if (!label) return label;
+
+  const trimmed = label.trim();
+
+  if (lang === 'tr') {
+    // 1. Bridges & Tunnels
+    if (/fsm|fatih sultan/i.test(trimmed)) {
+      return 'FSM Köprüsü üzerinden';
+    }
+    if (/15 temmuz|bogazici|boğaziçi|bosphorus/i.test(trimmed)) {
+      return '15 Temmuz Köprüsü üzerinden';
+    }
+    if (/eurasia|avrasya/i.test(trimmed)) {
+      return 'Avrasya Tüneli üzerinden';
+    }
+    if (/osmangazi|korfez|körfez/i.test(trimmed)) {
+      return 'Osmangazi Köprüsü üzerinden';
+    }
+    if (/canakkale|çanakkale|1915/i.test(trimmed)) {
+      return '1915 Çanakkale Köprüsü üzerinden';
+    }
+    if (/yavuz sultan|yss/i.test(trimmed)) {
+      return 'Yavuz Sultan Selim Köprüsü üzerinden';
+    }
+    if (/kgm highway toll/i.test(trimmed)) {
+      return 'KGM Otoyolu üzerinden';
+    }
+
+    // 2. "via X (KGM Toll)" -> "X üzerinden (KGM Geçişi)"
+    const kgmTollMatch = trimmed.match(/^(?:via\s+)?(.+?)\s*\(\s*KGM\s+Toll\s*\)$/i);
+    if (kgmTollMatch) {
+      const road = kgmTollMatch[1].trim();
+      return `${road} üzerinden (KGM Geçişi)`;
+    }
+
+    // 3. "via X" or "Via X" -> "X üzerinden"
+    const viaMatch = trimmed.match(/^(?:via\s+)(.+)$/i);
+    if (viaMatch) {
+      const road = viaMatch[1].trim();
+      return `${road} üzerinden`;
+    }
+
+    // 4. "Route X" -> "Rota X"
+    const routeMatch = trimmed.match(/^Route\s+(.+)$/i);
+    if (routeMatch) {
+      return `Rota ${routeMatch[1]}`;
+    }
+
+    // If it already ends with "üzerinden", return as is
+    if (trimmed.endsWith('üzerinden')) {
+      return trimmed;
+    }
+
+    // If it's a road code like "D020" or "O-7"
+    if (/^[A-Z0-9\-]+$/i.test(trimmed) && (trimmed.startsWith('D') || trimmed.startsWith('O-') || trimmed.startsWith('E-'))) {
+      return `${trimmed} üzerinden`;
+    }
+
+    return trimmed;
+  } else {
+    // English mode
+    if (/fsm|fatih sultan/i.test(trimmed)) {
+      return 'via FSM Bridge';
+    }
+    if (/15 temmuz|bogazici|boğaziçi|bosphorus/i.test(trimmed)) {
+      return 'via 15 Temmuz Bridge';
+    }
+    if (/eurasia|avrasya/i.test(trimmed)) {
+      return 'via Eurasia Tunnel';
+    }
+    if (/osmangazi|korfez|körfez/i.test(trimmed)) {
+      return 'via Osmangazi Bridge';
+    }
+    if (/canakkale|çanakkale|1915/i.test(trimmed)) {
+      return 'via 1915 Canakkale Bridge';
+    }
+    if (/yavuz sultan|yss/i.test(trimmed)) {
+      return 'via Yavuz Sultan Selim Bridge';
+    }
+    if (/kgm otoyol/i.test(trimmed)) {
+      return 'via KGM Highway Toll';
+    }
+
+    // "X üzerinden (KGM Geçişi)" -> "via X (KGM Toll)"
+    const kgmTrMatch = trimmed.match(/^(.+?)\s+üzerinden\s*\(\s*KGM\s+Geçişi\s*\)$/i);
+    if (kgmTrMatch) {
+      return `via ${kgmTrMatch[1].trim()} (KGM Toll)`;
+    }
+
+    // "X üzerinden" -> "via X"
+    const uzerindenMatch = trimmed.match(/^(.+?)\s+üzerinden$/i);
+    if (uzerindenMatch) {
+      return `via ${uzerindenMatch[1].trim()}`;
+    }
+
+    // "Rota X" -> "Route X"
+    const rotaMatch = trimmed.match(/^Rota\s+(.+)$/i);
+    if (rotaMatch) {
+      return `Route ${rotaMatch[1]}`;
+    }
+
+    // If it already starts with "via ", return as is
+    if (/^via\s+/i.test(trimmed)) {
+      return trimmed;
+    }
+
+    // If it's a road code like "D020" or "O-7"
+    if (/^[A-Z0-9\-]+$/i.test(trimmed) && (trimmed.startsWith('D') || trimmed.startsWith('O-') || trimmed.startsWith('E-'))) {
+      return `via ${trimmed}`;
+    }
+
+    return trimmed;
+  }
+}
