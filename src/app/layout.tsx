@@ -16,9 +16,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
+    <html lang="tr" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#f5f5f5" />
+        <meta name="theme-color" content="#0a0a0a" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function() {
+              try {
+                var saved = localStorage.getItem('q2_theme');
+                if (saved === 'light') {
+                  document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
+              } catch(e) {}
+            })()`,
+          }}
+        />
       </head>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         {children}

@@ -207,7 +207,7 @@ function AppContent() {
   const activeCalc = routeResults?.calcs.find(c => c.routeId === selectedRouteId) || routeResults?.calcs[0];
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white selection:bg-red-500 selection:text-white p-4 sm:p-6 md:p-8 flex flex-col items-center">
+    <main className="min-h-screen bg-transparent selection:bg-red-500 selection:text-white p-4 sm:p-6 md:p-8 flex flex-col items-center">
       
       {/* Demo Banner */}
       {searchParams.get('demo') === 'true' && (

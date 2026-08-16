@@ -115,6 +115,14 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback, them
     };
   }, [activeRoute?.polyline, activeRoute?.trafficIntervals, map]);
 
+  useEffect(() => {
+    if (map) {
+      map.setOptions({
+        styles: theme === 'light' ? lightMapStyles : darkMapStyles,
+      });
+    }
+  }, [theme, map]);
+
   const onLoad = React.useCallback(function callback(mapInstance: google.maps.Map) {
     setMap(mapInstance);
   }, []);
