@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { VehicleSettings } from '@/lib/providers/interfaces';
+import React, { useState, useEffect, useRef } from 'react';
+import { VehicleSettings, PowertrainType } from '@/lib/providers/interfaces';
 import { storage } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { X } from 'lucide-react';
@@ -68,81 +68,207 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-dialog-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div ref={dialogRef} className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
-        <button 
+      <div
+        ref={dialogRef}
+        className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative my-8"
+      >
+        <button
           onClick={onClose}
           className="absolute right-4 top-4 text-neutral-500 hover:text-white transition-colors"
           aria-label={getTranslation(language, 'save') === 'Save' ? 'Close settings' : 'Ayarları kapat'}
         >
           <X size={20} />
         </button>
-        
-        <h2 id="settings-dialog-title" className="text-xl font-light text-white mb-6">{settings.carModel || getTranslation(language, 'vehicle')} {getTranslation(language, 'settings')}</h2>
-        
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-2">
+
+        <h2 id="settings-dialog-title" className="text-xl font-light text-white mb-6">
+          {settings.carModel || getTranslation(language, 'vehicle')} {getTranslation(language, 'settings')}
+        </h2>
+
+        <div className="flex flex-col gap-4">
+          {/* Vehicle Model Selector */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-neutral-400">
               {getTranslation(language, 'vehicleModel')}
             </label>
             <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
               <button
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.carModel !== 'Hyundai i20 2025' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                onClick={() => setSettings({...settings, carModel: 'Audi Q2', fuelType: 'petrol', consumptionL100km: 5.4})}
+                type="button"
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  settings.carModel !== 'Hyundai i20 2025'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() =>
+                  setSettings({
+                    ...settings,
+                    carModel: 'Audi Q2',
+                    fuelType: 'petrol',
+                    powertrain: 'petrol',
+                    consumptionL100km: 5.4,
+                  })
+                }
               >
                 Audi Q2
               </button>
               <button
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.carModel === 'Hyundai i20 2025' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                onClick={() => setSettings({...settings, carModel: 'Hyundai i20 2025', fuelType: 'petrol', consumptionL100km: 5.3})}
+                type="button"
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  settings.carModel === 'Hyundai i20 2025'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() =>
+                  setSettings({
+                    ...settings,
+                    carModel: 'Hyundai i20 2025',
+                    fuelType: 'petrol',
+                    powertrain: 'petrol',
+                    consumptionL100km: 5.3,
+                  })
+                }
               >
                 Hyundai i20
               </button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Fuel / Powertrain Type */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-neutral-400">
-              {getTranslation(language, 'fuelType')}
+              {getTranslation(language, 'fuelType')} / {getTranslation(language, 'powertrain')}
             </label>
-            <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
+            <div className="grid grid-cols-2 gap-1.5 bg-white/5 border border-white/10 rounded-xl p-1">
               <button
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.fuelType === 'petrol' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                onClick={() => setSettings({...settings, fuelType: 'petrol', consumptionL100km: settings.carModel === 'Hyundai i20 2025' ? 5.3 : 5.4})}
+                type="button"
+                className={`py-2 text-xs font-medium rounded-lg transition-colors ${
+                  settings.fuelType === 'petrol' && (!settings.powertrain || settings.powertrain === 'petrol')
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() =>
+                  setSettings({
+                    ...settings,
+                    fuelType: 'petrol',
+                    powertrain: 'petrol',
+                    consumptionL100km: settings.carModel === 'Hyundai i20 2025' ? 5.3 : 5.4,
+                  })
+                }
               >
-                {getTranslation(language, 'petrol')}
+                {getTranslation(language, 'petrol')} (ICE)
               </button>
               <button
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${settings.fuelType === 'diesel' ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                onClick={() => setSettings({...settings, fuelType: 'diesel', consumptionL100km: settings.carModel === 'Hyundai i20 2025' ? 4.5 : 6.0})}
+                type="button"
+                className={`py-2 text-xs font-medium rounded-lg transition-colors ${
+                  settings.fuelType === 'diesel'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() =>
+                  setSettings({
+                    ...settings,
+                    fuelType: 'diesel',
+                    powertrain: 'diesel',
+                    consumptionL100km: settings.carModel === 'Hyundai i20 2025' ? 4.5 : 6.0,
+                  })
+                }
               >
                 {getTranslation(language, 'diesel')}
               </button>
+              <button
+                type="button"
+                className={`py-2 text-xs font-medium rounded-lg transition-colors ${
+                  settings.powertrain === 'mild_hybrid'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() =>
+                  setSettings({
+                    ...settings,
+                    fuelType: 'petrol',
+                    powertrain: 'mild_hybrid',
+                    consumptionL100km: settings.consumptionL100km || 5.2,
+                  })
+                }
+              >
+                {getTranslation(language, 'mildHybrid')}
+              </button>
+              <button
+                type="button"
+                className={`py-2 text-xs font-medium rounded-lg transition-colors ${
+                  settings.powertrain === 'full_hybrid'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() =>
+                  setSettings({
+                    ...settings,
+                    fuelType: 'petrol',
+                    powertrain: 'full_hybrid',
+                    consumptionL100km: 4.6,
+                  })
+                }
+              >
+                {getTranslation(language, 'fullHybrid')}
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Official WLTP Baseline */}
+          <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-end">
               <label className="text-sm font-medium text-neutral-400">
-                {getTranslation(language, 'consumption')} ({getTranslation(language, 'consumptionUnit')})
+                {getTranslation(language, 'officialConsumption')} ({getTranslation(language, 'consumptionUnit')})
               </label>
-              <span className="text-xs text-neutral-500 uppercase tracking-widest font-bold">{getTranslation(language, 'wltpAverage')}</span>
+              <span className="text-xs text-neutral-500 uppercase tracking-widest font-bold">
+                {getTranslation(language, 'wltpAverage')}
+              </span>
             </div>
-            <input 
+            <input
               type="number"
               step="0.1"
               value={settings.consumptionL100km}
-              onChange={(e) => setSettings({...settings, consumptionL100km: parseFloat(e.target.value) || 0})}
-              className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-600 font-light"
+              onChange={(e) =>
+                setSettings({ ...settings, consumptionL100km: parseFloat(e.target.value) || 0 })
+              }
+              className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-600 font-light"
             />
           </div>
 
-          <button 
+          {/* Optional User Dashboard Average Calibration */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-end">
+              <label className="text-sm font-medium text-neutral-400">
+                {getTranslation(language, 'personalAverage')}
+              </label>
+              <span className="text-[11px] text-neutral-500 font-light">
+                {getTranslation(language, 'personalAverageHint')}
+              </span>
+            </div>
+            <input
+              type="number"
+              step="0.1"
+              placeholder={getTranslation(language, 'personalAverageHint')}
+              value={settings.personalAverageConsumption ?? ''}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  personalAverageConsumption: e.target.value ? parseFloat(e.target.value) : undefined,
+                })
+              }
+              className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-600 font-light"
+            />
+          </div>
+
+          <button
+            type="button"
             onClick={handleSave}
             className="w-full bg-white hover:bg-neutral-200 text-black font-bold uppercase tracking-widest text-sm py-3.5 rounded-xl transition-all duration-300 mt-2 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
           >

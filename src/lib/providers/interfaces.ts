@@ -9,11 +9,20 @@ export interface LatLngLiteral {
   lng: number;
 }
 
+export interface WeatherData {
+  temperatureC: number;
+  weatherCode: number;
+  weatherDescription: string;
+  isRainy: boolean;
+  windSpeedKmh: number;
+  retrievedAt: string;
+}
+
 export interface RouteInfo {
   id: string;
   label: string;
   distanceKm: number;
-  durationMins: number; // normal
+  durationMins: number; // normal / free-flow
   trafficDurationMins: number;
   polyline: string;
   trafficIntervals?: TrafficInterval[];
@@ -24,6 +33,10 @@ export interface RouteInfo {
   destinationCoord?: LatLngLiteral;
   originText?: string;
   destinationText?: string;
+  googleFuelEstimateLiters?: number;
+  routeLabels?: string[];
+  isEcoRoute?: boolean;
+  weather?: WeatherData;
 }
 
 export interface TollEstimate {
@@ -55,11 +68,40 @@ export interface FuelPriceInfo {
   fuelType?: 'petrol' | 'diesel';
 }
 
+export type PowertrainType = 'petrol' | 'diesel' | 'mild_hybrid' | 'full_hybrid' | 'phev' | 'ev';
+
 export interface VehicleSettings {
-  carModel?: 'Audi Q2' | 'Hyundai i20 2025';
+  carModel?: string;
   fuelType: 'petrol' | 'diesel';
-  consumptionL100km: number;
+  powertrain?: PowertrainType;
+  consumptionL100km: number; // Official combined baseline (WLTP)
+  personalAverageConsumption?: number; // Optional user dashboard calibrated average
+  displacementL?: number;
+  hasTurbo?: boolean;
+  drivetrain?: 'FWD' | 'AWD' | 'RWD';
   tollClass: number; // Default 1 for passenger car
+}
+
+export interface TrafficSegmentBreakdown {
+  normalKm: number;
+  slowKm: number;
+  jamKm: number;
+  totalKm: number;
+}
+
+export interface FuelEstimationDetails {
+  officialConsumptionL100km: number;
+  estimatedConsumptionL100km: number;
+  estimatedFuelLiters: number;
+  baselineFuelLiters: number;
+  googleFuelEstimateLiters?: number;
+  trafficImpactPercentage: number;
+  trafficSegments: TrafficSegmentBreakdown;
+  trafficDelayRatio: number;
+  shortTripFactor: number;
+  weatherFactor: number;
+  temperatureC?: number;
+  dataQuality: 'HIGH' | 'MEDIUM' | 'BASIC' | 'FALLBACK_BASELINE';
 }
 
 export interface TripCostCalculation {
@@ -72,13 +114,39 @@ export interface TripCostCalculation {
   isCheapest?: boolean;
   isFastest?: boolean;
   isTollFree?: boolean;
+  isLowestFuel?: boolean;
+  isEcoRoute?: boolean;
+  estimationDetails?: FuelEstimationDetails;
+}
+
+export interface LiveTripPoint {
+  lat: number;
+  lng: number;
+  timestamp: number;
+  speedKmh?: number;
+  accuracyMeters?: number;
+}
+
+export interface LiveTripState {
+  isActive: boolean;
+  isPaused: boolean;
+  startTime: number;
+  elapsedSeconds: number;
+  distanceTraveledKm: number;
+  currentSpeedKmh: number;
+  estimatedFuelUsedLiters: number;
+  estimatedCurrentConsumptionL100km: number;
+  routeProgressPercentage: number;
+  currentLocation?: LatLngLiteral;
+  error?: string;
 }
 
 export interface RoutingProvider {
   calculateRoutes(
     originPlaceId: string, 
     destinationPlaceId: string, 
-    departureTime?: Date
+    departureTime?: Date,
+    vehicle?: VehicleSettings
   ): Promise<RouteCalculation[]>;
 }
 

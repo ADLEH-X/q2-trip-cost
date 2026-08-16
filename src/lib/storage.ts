@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
 export const defaultVehicleSettings: VehicleSettings = {
   carModel: 'Audi Q2',
   fuelType: 'petrol',
+  powertrain: 'petrol',
   consumptionL100km: 5.4, // 2026 Audi Q2 35 TFSI WLTP Combined Average
   tollClass: 1, // standard passenger car
 };
@@ -42,7 +43,7 @@ export const storage = {
     localStorage.setItem(STORAGE_KEYS.LANGUAGE, lang);
   },
 
-  // Stub for history features
+  // History and Recent Trips
   getHistory(): any[] {
     if (typeof window === 'undefined') return [];
     const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
@@ -61,6 +62,18 @@ export const storage = {
   clearHistory(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEYS.HISTORY);
+  },
+
+  getRecentTrips(): any[] {
+    return this.getHistory();
+  },
+
+  addRecentTrip(trip: any): void {
+    this.saveToHistory(trip);
+  },
+
+  clearRecentTrips(): void {
+    this.clearHistory();
   },
 
   getTheme(): 'dark' | 'light' {

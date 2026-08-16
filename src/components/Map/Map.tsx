@@ -1,20 +1,20 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { GoogleMap, Polyline, Marker, TrafficLayer } from '@react-google-maps/api';
+import { GoogleMap, Marker, TrafficLayer } from '@react-google-maps/api';
+import { RouteInfo, LatLngLiteral } from '@/lib/providers/interfaces';
+import { decodePolyline } from '@/utils/googleMaps';
 
 const containerStyle = {
   width: '100%',
-  height: '100%'
+  height: '100%',
 };
 
 // Default center: Istanbul
-const defaultCenter = {
+const defaultCenter: LatLngLiteral = {
   lat: 41.0082,
-  lng: 28.9784
+  lng: 28.9784,
 };
-
-import { RouteInfo } from '@/lib/providers/interfaces';
 
 interface MapProps {
   activeRoute?: RouteInfo;
@@ -52,27 +52,32 @@ const lightMapStyles = [
 
 export default function Map({ activeRoute, isLoaded = true, isMockFallback, theme = 'dark' }: MapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [decodedPath, setDecodedPath] = useState<google.maps.LatLng[]>([]);
+  const [decodedPath, setDecodedPath] = useState<LatLngLiteral[]>([]);
   const polylinesRef = React.useRef<google.maps.Polyline[]>([]);
 
   useEffect(() => {
     // Clear old polylines from the map immediately
-    polylinesRef.current.forEach(p => p.setMap(null));
+    polylinesRef.current.forEach((p) => p.setMap(null));
     polylinesRef.current = [];
 
-    if (activeRoute?.polyline && typeof google !== 'undefined') {
-      const path = google.maps.geometry.encoding.decodePath(activeRoute.polyline);
+    if (activeRoute?.polyline) {
+      const path = decodePolyline(activeRoute.polyline);
       setDecodedPath(path);
 
-      if (map && path.length > 0) {
-        // Draw the new segmented polylines manually to bypass buggy React wrappers
+      if (map && typeof google !== 'undefined' && path.length > 0) {
+        // Draw the new segmented polylines with live traffic coloring
         if (activeRoute.trafficIntervals && activeRoute.trafficIntervals.length > 0) {
           activeRoute.trafficIntervals.forEach((interval) => {
             const segmentPath = path.slice(interval.startPointIndex, interval.endPointIndex + 1);
             let color = '#3b82f6';
             let zIndex = 1;
-            if (interval.speed === 'SLOW') { color = '#f59e0b'; zIndex = 2; }
-            else if (interval.speed === 'TRAFFIC_JAM') { color = '#ef4444'; zIndex = 3; }
+            if (interval.speed === 'SLOW') {
+              color = '#f59e0b';
+              zIndex = 2;
+            } else if (interval.speed === 'TRAFFIC_JAM') {
+              color = '#ef4444';
+              zIndex = 3;
+            }
 
             const polyline = new google.maps.Polyline({
               path: segmentPath,
@@ -80,7 +85,7 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback, them
               strokeOpacity: 1.0,
               strokeWeight: 6,
               zIndex: zIndex,
-              map: map
+              map: map,
             });
             polylinesRef.current.push(polyline);
           });
@@ -90,32 +95,28 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback, them
             strokeColor: '#3b82f6',
             strokeOpacity: 0.8,
             strokeWeight: 6,
-            map: map
+            map: map,
           });
           polylinesRef.current.push(polyline);
         }
 
         const bounds = new google.maps.LatLngBounds();
-        path.forEach(p => bounds.extend(p));
-        map.fitBounds(bounds);
-        
-        // Add a small padding
-        const padding = { top: 50, bottom: 50, left: 50, right: 50 };
-        map.fitBounds(bounds, padding);
+        path.forEach((p) => bounds.extend(p));
+        map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
       }
     } else {
       setDecodedPath([]);
     }
-    
+
     // Cleanup on unmount or route change
     return () => {
-      polylinesRef.current.forEach(p => p.setMap(null));
+      polylinesRef.current.forEach((p) => p.setMap(null));
       polylinesRef.current = [];
     };
   }, [activeRoute?.polyline, activeRoute?.trafficIntervals, map]);
 
-  const onLoad = React.useCallback(function callback(map: google.maps.Map) {
-    setMap(map);
+  const onLoad = React.useCallback(function callback(mapInstance: google.maps.Map) {
+    setMap(mapInstance);
   }, []);
 
   const onUnmount = React.useCallback(function callback() {
@@ -136,7 +137,7 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback, them
           options={{
             disableDefaultUI: true,
             zoomControl: true,
-            styles: theme === 'light' ? lightMapStyles : darkMapStyles
+            styles: theme === 'light' ? lightMapStyles : darkMapStyles,
           }}
         >
           {decodedPath.length > 0 && (

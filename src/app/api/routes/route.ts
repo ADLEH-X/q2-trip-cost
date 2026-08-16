@@ -5,39 +5,56 @@ const GOOGLE_ROUTES_API_KEY = process.env.GOOGLE_ROUTES_API_KEY;
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { origin, destination, computeAlternativeRoutes = true } = body;
+    const {
+      origin,
+      destination,
+      computeAlternativeRoutes = true,
+      emissionType = 'GASOLINE',
+    } = body;
 
     if (!GOOGLE_ROUTES_API_KEY) {
-      // Return a 500 error if key is missing, or we could return mock data for dev mode.
-      return NextResponse.json({ error: 'Google Routes API key is missing. Please configure .env' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Google Routes API key is missing. Please configure .env.local' },
+        { status: 500 }
+      );
+    }
+
+    // Map emission type to Google Routes API enum
+    let googleEmissionType = 'GASOLINE';
+    if (emissionType === 'DIESEL') googleEmissionType = 'DIESEL';
+    else if (emissionType === 'HYBRID' || emissionType === 'full_hybrid' || emissionType === 'mild_hybrid' || emissionType === 'phev') {
+      googleEmissionType = 'HYBRID';
+    } else if (emissionType === 'ELECTRIC' || emissionType === 'ev') {
+      googleEmissionType = 'ELECTRIC';
     }
 
     const payload = {
       origin: { placeId: origin },
       destination: { placeId: destination },
       travelMode: 'DRIVE',
-      routingPreference: 'TRAFFIC_AWARE',
+      routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
       computeAlternativeRoutes,
       routeModifiers: {
         vehicleInfo: {
-          emissionType: 'GASOLINE' // Matches Audi Q2 passenger car
+          emissionType: googleEmissionType,
         },
-        tollPasses: [] // We might not have specific Turkish passes in enum, so leave empty or configure
+        tollPasses: [],
       },
-      extraComputations: ['TOLLS', 'TRAFFIC_ON_POLYLINE'],
+      extraComputations: ['TOLLS', 'TRAFFIC_ON_POLYLINE', 'FUEL_CONSUMPTION'],
     };
 
-    // The field mask is crucial for Routes API
-    const fieldMask = 'routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.encodedPolyline,routes.travelAdvisory,routes.routeLabels,routes.description,routes.legs.steps,routes.legs.startLocation,routes.legs.endLocation';
+    // Google Routes API FieldMask
+    const fieldMask =
+      'routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.encodedPolyline,routes.travelAdvisory,routes.routeLabels,routes.description,routes.legs.steps,routes.legs.startLocation,routes.legs.endLocation';
 
     const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY,
-        'X-Goog-FieldMask': fieldMask
+        'X-Goog-FieldMask': fieldMask,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -49,17 +66,21 @@ export async function POST(request: Request) {
 
     // Force alternative route if Google only returns 1
     if (data.routes && data.routes.length === 1) {
-      const altPayload = { 
-        ...payload, 
-        routeModifiers: { ...payload.routeModifiers, avoidTolls: true } 
+      const altPayload = {
+        ...payload,
+        routeModifiers: { ...payload.routeModifiers, avoidTolls: true },
       };
-      
+
       const altResponse = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY, 'X-Goog-FieldMask': fieldMask },
-        body: JSON.stringify(altPayload)
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY,
+          'X-Goog-FieldMask': fieldMask,
+        },
+        body: JSON.stringify(altPayload),
       });
-      
+
       if (altResponse.ok) {
         const altData = await altResponse.json();
         if (altData.routes && altData.routes.length > 0) {
@@ -67,16 +88,27 @@ export async function POST(request: Request) {
           if (altData.routes[0].distanceMeters !== data.routes[0].distanceMeters) {
             data.routes.push(altData.routes[0]);
           } else {
-            // Try avoiding highways if toll-free was the same
-            const hwyPayload = { ...payload, routeModifiers: { ...payload.routeModifiers, avoidHighways: true } };
+            // Try avoiding highways if toll-free was identical
+            const hwyPayload = {
+              ...payload,
+              routeModifiers: { ...payload.routeModifiers, avoidHighways: true },
+            };
             const hwyResponse = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY, 'X-Goog-FieldMask': fieldMask },
-              body: JSON.stringify(hwyPayload)
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': GOOGLE_ROUTES_API_KEY,
+                'X-Goog-FieldMask': fieldMask,
+              },
+              body: JSON.stringify(hwyPayload),
             });
             if (hwyResponse.ok) {
               const hwyData = await hwyResponse.json();
-              if (hwyData.routes && hwyData.routes.length > 0 && hwyData.routes[0].distanceMeters !== data.routes[0].distanceMeters) {
+              if (
+                hwyData.routes &&
+                hwyData.routes.length > 0 &&
+                hwyData.routes[0].distanceMeters !== data.routes[0].distanceMeters
+              ) {
                 data.routes.push(hwyData.routes[0]);
               }
             }

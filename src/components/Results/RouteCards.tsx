@@ -4,7 +4,7 @@ import { buildDirectionsUrl } from '@/utils/googleMaps';
 import React from 'react';
 import { TripCostCalculation, RouteCalculation } from '@/lib/providers/interfaces';
 import { getTranslation, localizeRouteLabel, Language } from '@/lib/translations';
-import { Zap, CheckCircle2, Fuel, Coins, Navigation } from 'lucide-react';
+import { Zap, CheckCircle2, Fuel, Coins, Navigation, Info, Leaf, CloudRain, Sun } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -62,7 +62,7 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
               </div>
             </div>
 
-            <div className="flex gap-2 mb-4 relative z-10">
+            <div className="flex flex-wrap items-center gap-2 mb-3 relative z-10">
               {calc.isCheapest && (
                 <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
                   <CheckCircle2 size={12} /> {getTranslation(language, 'cheapest')}
@@ -73,9 +73,57 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
                   <Zap size={12} /> {getTranslation(language, 'fastest')}
                 </span>
               )}
+              {calc.isLowestFuel && (
+                <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-teal-500/10 text-teal-300 px-2.5 py-1 rounded-full border border-teal-500/20">
+                  <Leaf size={12} /> {getTranslation(language, 'lowestFuel')}
+                </span>
+              )}
+              {calc.isEcoRoute && !calc.isLowestFuel && (
+                <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-green-500/10 text-green-300 px-2.5 py-1 rounded-full border border-green-500/20">
+                  <Leaf size={12} /> {getTranslation(language, 'ecoRoute')}
+                </span>
+              )}
               {calc.isTollFree && (
                 <span className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase bg-white/10 text-neutral-300 px-2.5 py-1 rounded-full border border-white/10">
                   {getTranslation(language, 'tollFree')}
+                </span>
+              )}
+
+              {/* Ambient Weather Indicator */}
+              {route.weather && (
+                <span 
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border bg-white/5 text-neutral-300 border-white/10"
+                  title={`${route.weather.weatherDescription} (${route.weather.temperatureC}°C, ${route.weather.windSpeedKmh} km/h wind)`}
+                >
+                  {route.weather.isRainy ? (
+                    <CloudRain size={11} className="text-blue-400 shrink-0" />
+                  ) : (
+                    <Sun size={11} className="text-amber-400 shrink-0" />
+                  )}
+                  <span>{route.weather.temperatureC}°C</span>
+                </span>
+              )}
+
+              {/* Traffic Impact Indication */}
+              {calc.estimationDetails && (
+                <span 
+                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border ${
+                    calc.estimationDetails.trafficImpactPercentage >= 15
+                      ? 'bg-red-500/10 text-red-400 border-red-500/20 font-medium'
+                      : calc.estimationDetails.dataQuality === 'HIGH' || calc.estimationDetails.dataQuality === 'MEDIUM'
+                      ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                      : 'bg-white/5 text-neutral-400 border-white/10'
+                  }`}
+                  title={getTranslation(language, 'trafficInfoTooltip')}
+                >
+                  <Info size={11} className="opacity-70 shrink-0" />
+                  <span>
+                    {calc.estimationDetails.trafficImpactPercentage >= 15
+                      ? `${getTranslation(language, 'heavyTraffic')} +${calc.estimationDetails.trafficImpactPercentage.toFixed(0)}%`
+                      : calc.estimationDetails.dataQuality === 'HIGH' || calc.estimationDetails.dataQuality === 'MEDIUM'
+                      ? getTranslation(language, 'trafficAdjusted')
+                      : getTranslation(language, 'officialConsumption')}
+                  </span>
                 </span>
               )}
             </div>
@@ -83,7 +131,14 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10 text-xs relative z-10">
               <div className="flex items-center justify-between">
                 <span className="text-neutral-500 flex items-center gap-1.5"><Fuel size={14} /> {getTranslation(language, 'fuel')}</span>
-                <span className="font-medium text-neutral-300">{calc.fuelCostTRY.toFixed(0)} {getTranslation(language, 'currencyTRY')}</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-medium text-neutral-300">{calc.fuelCostTRY.toFixed(0)} {getTranslation(language, 'currencyTRY')}</span>
+                  {calc.estimationDetails && (
+                    <span className="text-[11px] text-neutral-500">
+                      ~{calc.estimationDetails.estimatedConsumptionL100km} {getTranslation(language, 'consumptionUnit')}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-neutral-500 flex items-center gap-1.5"><Coins size={14} /> {getTranslation(language, 'tolls')}</span>
