@@ -1,4 +1,4 @@
-import { RouteCalculation, RoutingProvider, VehicleSettings } from './interfaces';
+import { RouteCalculation, RoutingProvider, VehicleSettings, WeatherData } from './interfaces';
 import { getRouteWeather } from '../services/weatherService';
 
 export class GoogleRoutesAdapter implements RoutingProvider {
@@ -57,7 +57,7 @@ export class GoogleRoutesAdapter implements RoutingProvider {
     // Try fetching origin weather in parallel for environmental fuel adjustment
     const firstLeg = data.routes[0]?.legs?.[0];
     const startLoc = firstLeg?.startLocation?.latLng;
-    let weatherData;
+    let weatherData: WeatherData | undefined;
     if (startLoc?.latitude && startLoc?.longitude) {
       try {
         weatherData = await getRouteWeather(Number(startLoc.latitude), Number(startLoc.longitude));

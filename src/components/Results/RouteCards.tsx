@@ -15,7 +15,7 @@ function cn(...inputs: ClassValue[]) {
 interface RouteCardsProps {
   calculations: TripCostCalculation[];
   routes: RouteCalculation[];
-  selectedRouteId: string;
+  selectedRouteId?: string | null;
   onSelectRoute: (id: string) => void;
   language: Language;
   isRoundTripActive?: boolean;
