@@ -1,5 +1,122 @@
 import { RouteCalculation, RoutingProvider, VehicleSettings, WeatherData } from './interfaces';
 import { getRouteWeather } from '../services/weatherService';
+import { decodePolyline, Point } from '@/utils/googleMaps';
+
+// ─── Major Crossing Definitions ─────────────────────────────────────────────
+// Each crossing has a center coordinate and a proximity radius (in degrees).
+// A route must have at least one polyline point within this radius to be
+// considered as actually using that crossing.
+// ~0.02 degrees ≈ ~2.2 km — tight enough to avoid false positives.
+const MAJOR_CROSSINGS = {
+  eurasia: {
+    lat: 41.0028, lng: 29.0016,
+    radiusDeg: 0.02,
+    label: 'via Eurasia Tunnel',
+    tollKey: 'avrasya' as const,
+    keywords: ['avrasya', 'eurasia'],
+  },
+  fsm: {
+    lat: 41.0911, lng: 29.0558,
+    radiusDeg: 0.02,
+    label: 'via FSM Bridge',
+    tollKey: 'fsm' as const,
+    keywords: ['fatih sultan mehmet', 'fsm köprüsü'],
+  },
+  bridge15July: {
+    lat: 41.0456, lng: 29.0343,
+    radiusDeg: 0.02,
+    label: 'via 15 Temmuz Bridge',
+    tollKey: 'fsm' as const, // Same toll class as FSM
+    keywords: ['15 temmuz', 'boğaziçi', 'bogazici', 'bosphorus'],
+  },
+  yss: {
+    lat: 41.2028, lng: 29.1119,
+    radiusDeg: 0.025,
+    label: 'via Yavuz Sultan Selim Bridge',
+    tollKey: 'yss' as const,
+    keywords: ['yavuz sultan selim'],
+  },
+  osmangazi: {
+    lat: 40.7540, lng: 29.5180,
+    radiusDeg: 0.03, // Slightly wider — it's a long bridge
+    label: 'via Osmangazi Bridge',
+    tollKey: 'osmangazi' as const,
+    keywords: ['osmangazi köprüsü', 'osmangazi bridge'],
+  },
+  canakkale: {
+    lat: 40.3370, lng: 26.6340,
+    radiusDeg: 0.03,
+    label: 'via Çanakkale Bridge',
+    tollKey: 'canakkale' as const,
+    keywords: ['çanakkale', 'canakkale', '1915'],
+  },
+} as const;
+
+type CrossingKey = keyof typeof MAJOR_CROSSINGS;
+type TollKey = 'avrasya' | 'yss' | 'fsm' | 'osmangazi' | 'canakkale';
+
+interface LiveTolls {
+  avrasya: number;
+  yss: number;
+  fsm: number;
+  osmangazi: number;
+  canakkale: number;
+}
+
+/**
+ * Check if any point in the polyline passes within `radiusDeg` of a crossing coordinate.
+ * Uses adaptive sampling for performance on long polylines.
+ */
+function polylinePassesNear(points: Point[], crossingLat: number, crossingLng: number, radiusDeg: number): boolean {
+  if (points.length === 0) return false;
+  const radiusSq = radiusDeg * radiusDeg;
+  // Adaptive step: sample every Nth point for very long polylines
+  const step = points.length > 500 ? Math.ceil(points.length / 250) : 1;
+  for (let i = 0; i < points.length; i += step) {
+    const dLat = points[i].lat - crossingLat;
+    const dLng = points[i].lng - crossingLng;
+    if (dLat * dLat + dLng * dLng < radiusSq) return true;
+  }
+  return false;
+}
+
+/**
+ * Detect which major crossings the route ACTUALLY passes through,
+ * using geographic polyline proximity (not just keyword matching).
+ */
+function detectCrossingsFromPolyline(points: Point[]): CrossingKey[] {
+  const found: CrossingKey[] = [];
+  for (const [key, crossing] of Object.entries(MAJOR_CROSSINGS)) {
+    if (polylinePassesNear(points, crossing.lat, crossing.lng, crossing.radiusDeg)) {
+      found.push(key as CrossingKey);
+    }
+  }
+  return found;
+}
+
+/**
+ * Build a human-readable route label from the crossings detected.
+ * Uses Google's route description as a starting point, then validates
+ * against geographic proximity.
+ */
+function buildRouteLabel(
+  routeDescription: string,
+  routeStepsString: string,
+  detectedCrossings: CrossingKey[]
+): string {
+  // If geographic detection found specific crossings, use those
+  if (detectedCrossings.length > 0) {
+    // Prefer the first detected crossing (usually the dominant one)
+    return MAJOR_CROSSINGS[detectedCrossings[0]].label;
+  }
+
+  // No major crossing detected — use Google's description directly
+  if (routeDescription) {
+    return `via ${routeDescription}`;
+  }
+
+  return '';
+}
 
 export class GoogleRoutesAdapter implements RoutingProvider {
   async calculateRoutes(
@@ -42,7 +159,7 @@ export class GoogleRoutesAdapter implements RoutingProvider {
     const data = await response.json();
 
     // Fetch live tolls (cached via Next.js for 24h)
-    let liveTolls = { avrasya: 330.0, yss: 110.0, fsm: 59.0, osmangazi: 399.0, canakkale: 419.0 };
+    let liveTolls: LiveTolls = { avrasya: 330.0, yss: 110.0, fsm: 59.0, osmangazi: 399.0, canakkale: 419.0 };
     try {
       const tollRes = await fetch('/api/tolls');
       if (tollRes.ok) liveTolls = await tollRes.json();
@@ -93,84 +210,20 @@ export class GoogleRoutesAdapter implements RoutingProvider {
       const routeLabels = route.routeLabels || [];
       const isEcoRoute = routeLabels.includes('FUEL_EFFICIENT');
 
-      // Extract a meaningful English label from the route instructions
+      // ─── Geographic Crossing Detection ──────────────────────────────
+      // Decode the route polyline and check which major crossings it ACTUALLY passes through
+      const encodedPolyline = route.polyline?.encodedPolyline || '';
+      const polylinePoints = decodePolyline(encodedPolyline);
+      const detectedCrossings = detectCrossingsFromPolyline(polylinePoints);
+
+      // Build route label from Google description + geographic validation
+      const routeDescription = route.description || '';
       const steps = route.legs?.[0]?.steps || [];
-      const routeString = (
-        (route.description || '') +
-        ' ' +
-        steps
-          .map((s: any) => (s.navigationInstruction?.instructions || '') + ' ' + (s.staticDuration || ''))
-          .join(' ')
-      ).toLowerCase();
+      const routeStepsString = steps
+        .map((s: any) => (s.navigationInstruction?.instructions || ''))
+        .join(' ');
 
-      let customLabel = '';
-      const desc = (route.description || '').toLowerCase();
-
-      // 1. Check the primary route description first (most accurate)
-      if (desc.includes('avrasya') || desc.includes('eurasia')) customLabel = 'via Eurasia Tunnel';
-      else if (
-        desc.includes('15 temmuz') ||
-        desc.includes('boğaziçi') ||
-        desc.includes('bogazici') ||
-        desc.includes('bosphorus')
-      )
-        customLabel = 'via 15 Temmuz Bridge';
-      else if (desc.includes('fatih sultan mehmet') || desc.match(/\bfsm\b/))
-        customLabel = 'via FSM Bridge';
-      else if (desc.includes('yavuz sultan selim') && !desc.includes('15 temmuz'))
-        customLabel = 'via 15 Temmuz Bridge';
-      else if (desc.includes('osmangazi') || desc.includes('körfez') || desc.includes('korfez'))
-        customLabel = 'via Osmangazi Bridge';
-      else if (desc.includes('çanakkale') || desc.includes('canakkale') || desc.includes('1915'))
-        customLabel = 'via Canakkale Bridge';
-
-      // 2. Fallback to full step instructions
-      if (!customLabel) {
-        if (routeString.includes('avrasya') || routeString.includes('eurasia'))
-          customLabel = 'via Eurasia Tunnel';
-        else if (
-          routeString.includes('15 temmuz') ||
-          routeString.includes('boğaziçi') ||
-          routeString.includes('bogazici') ||
-          routeString.includes('bosphorus')
-        )
-          customLabel = 'via 15 Temmuz Bridge';
-        else if (routeString.includes('fatih sultan mehmet') || routeString.includes('fsm'))
-          customLabel = 'via FSM Bridge';
-        else if (routeString.includes('yavuz sultan selim')) customLabel = 'via 15 Temmuz Bridge';
-        else if (
-          routeString.includes('osmangazi') ||
-          routeString.includes('körfez') ||
-          routeString.includes('korfez')
-        )
-          customLabel = 'via Osmangazi Bridge';
-        else if (
-          routeString.includes('çanakkale') ||
-          routeString.includes('canakkale') ||
-          routeString.includes('1915')
-        )
-          customLabel = 'via Canakkale Bridge';
-      }
-
-      // Force 15 Temmuz if any indication exists, overriding YSS, but preserve FSM label
-      if (
-        !customLabel.includes('FSM') &&
-        (desc.includes('15 temmuz') ||
-          desc.includes('bosphorus') ||
-          desc.includes('boğaziçi') ||
-          desc.includes('bogazici') ||
-          routeString.includes('15 temmuz') ||
-          routeString.includes('bosphorus') ||
-          routeString.includes('boğaziçi') ||
-          routeString.includes('bogazici'))
-      ) {
-        customLabel = 'via 15 Temmuz Bridge';
-      }
-
-      // 3. Fallback to formatted route description
-      if (!customLabel && route.description) {
-        customLabel = `via ${route.description}`;
-      }
+      const customLabel = buildRouteLabel(routeDescription, routeStepsString, detectedCrossings);
 
       const leg0 = route.legs?.[0];
       const legStart = leg0?.startLocation?.latLng;
@@ -188,7 +241,7 @@ export class GoogleRoutesAdapter implements RoutingProvider {
         distanceKm: distanceMeters / 1000,
         durationMins: Math.ceil(staticDurationS / 60),
         trafficDurationMins: Math.ceil(durationS / 60),
-        polyline: route.polyline?.encodedPolyline || '',
+        polyline: encodedPolyline,
         trafficIntervals,
         warnings: [],
         originPlaceId,
@@ -201,12 +254,12 @@ export class GoogleRoutesAdapter implements RoutingProvider {
         weather: weatherData,
       };
 
-      // Parse tolls (Native Google API fallback + Custom Turkey Logic)
+      // ─── Toll Calculation ──────────────────────────────────────────
       let tollTotal = 0;
       let tollStatus: 'LIVE' | 'UNAVAILABLE' | 'CACHED' = 'LIVE';
-      const currency = 'TRY'; // Defaulting for Istanbul
+      const currency = 'TRY';
 
-      // 1. Try Native Google Toll Info First
+      // 1. Trust Google's native toll estimate FIRST
       const tollInfo = route.travelAdvisory?.tollInfo;
       if (tollInfo && tollInfo.estimatedPrice && tollInfo.estimatedPrice.length > 0) {
         const tryPrice = tollInfo.estimatedPrice.find((p: any) => p.currencyCode === 'TRY');
@@ -216,35 +269,25 @@ export class GoogleRoutesAdapter implements RoutingProvider {
         }
       }
 
-      // 2. Custom Turkey Fallback
-      if (tollTotal === 0 && route.travelAdvisory?.tollInfo && route.legs && route.legs.length > 0) {
-        let hasToll = false;
-
-        if (customLabel.includes('Eurasia')) {
-          tollTotal += liveTolls.avrasya;
-          hasToll = true;
-        } else if (customLabel.includes('Osmangazi')) {
-          tollTotal += liveTolls.osmangazi;
-          hasToll = true;
-        } else if (customLabel.includes('Canakkale')) {
-          tollTotal += liveTolls.canakkale;
-          hasToll = true;
-        } else if (customLabel.includes('YSS')) {
-          tollTotal += liveTolls.yss;
-          hasToll = true;
-        } else if (customLabel.includes('FSM') || customLabel.includes('15 Temmuz')) {
-          tollTotal += liveTolls.fsm;
-          hasToll = true;
+      // 2. If Google didn't provide a TRY toll price, use our own geographic detection
+      //    ONLY charge a major crossing toll if the polyline actually passes near that crossing
+      if (tollTotal === 0 && detectedCrossings.length > 0) {
+        for (const crossingKey of detectedCrossings) {
+          const crossing = MAJOR_CROSSINGS[crossingKey];
+          const tollPrice = liveTolls[crossing.tollKey];
+          if (tollPrice && tollPrice > 0) {
+            tollTotal += tollPrice;
+          }
         }
-
-        if (!hasToll) {
-          tollTotal += liveTolls.fsm; // Safe default
+        if (tollTotal > 0) {
+          tollStatus = 'CACHED'; // Mark as our own estimate, not Google's
         }
       }
 
-      if (tollTotal > 0 && !customLabel.includes('Bridge') && !customLabel.includes('Tunnel')) {
-        customLabel = customLabel ? `${customLabel} (KGM Toll)` : 'via KGM Highway Toll';
-      }
+      // 3. If Google says there's tollInfo but we found NO crossing and Google gave 0 TRY,
+      //    it might be a minor KGM highway toll. Do NOT assume a major bridge/tunnel fee.
+      //    Leave tollTotal at 0 — minor highway tolls (a few TL via HGS/OGS) are negligible
+      //    compared to the 59-399 TL major crossing fees and would mislead the user.
 
       return {
         route: {

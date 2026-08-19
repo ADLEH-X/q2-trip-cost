@@ -99,6 +99,8 @@ function minDistanceToPolyline(p: Point, polyline: Point[]): number {
 
 /**
  * Returns fixed corridor coordinates if route label mentions a specific major crossing.
+ * Only matches explicit crossing names — avoids loose keywords like 'körfez'
+ * that can appear in Istanbul junction names and cause false positives.
  */
 export function getCorridorPoint(routeLabel?: string): Point | null {
   if (!routeLabel) return null;
@@ -110,7 +112,7 @@ export function getCorridorPoint(routeLabel?: string): Point | null {
     return WAYPOINT_COORDINATES.bridge15July;
   }
   if (label.includes('yavuz sultan') || label.includes('yss')) return WAYPOINT_COORDINATES.yss;
-  if (label.includes('osmangazi') || label.includes('körfez') || label.includes('korfez')) return WAYPOINT_COORDINATES.osmangazi;
+  if (label.includes('osmangazi bridge') || label.includes('osmangazi köprüsü')) return WAYPOINT_COORDINATES.osmangazi;
   if (label.includes('canakkale') || label.includes('çanakkale') || label.includes('1915')) return WAYPOINT_COORDINATES.canakkale;
 
   return null;
