@@ -15,7 +15,7 @@ import { calculateOneWayCost, rankAlternativeRoutes } from '@/lib/calculations';
 import { storage } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { liveTripTracker } from '@/lib/services/liveTripTracker';
-import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2 } from 'lucide-react';
+import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car } from 'lucide-react';
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
@@ -220,7 +220,7 @@ function AppContent() {
       <header className="w-full max-w-5xl flex items-center justify-between py-4 mb-2">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.2)]">
-            Q2
+            {vehicleSettings?.carModel?.includes('Q2') ? 'Q2' : <Car size={18} />}
           </div>
           <div>
             <h1 className="font-light tracking-wider text-xl text-neutral-100 flex items-center gap-2">

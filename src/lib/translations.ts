@@ -94,6 +94,13 @@ export const translations = {
     fuelUsedSoFar: 'Harcanan Yakıt',
     weatherTemperature: 'Hava',
     rainWarning: 'Yağışlı yol',
+    selectVehiclePreset: 'Hazır Araç Listesi',
+    popularVehicles: 'En Çok Satan Araçlar (Türkiye)',
+    customVehicle: 'Diğer / Özel Araç Tanımla',
+    customVehicleName: 'Araç Model Adı',
+    customVehicleHint: 'Örn: BMW 320i, Honda Civic...',
+    engineAndSegment: 'Motor & Segment',
+    consumptionRange: 'Ortalama Tüketim',
   },
   en: {
     from: 'From?',
@@ -190,6 +197,13 @@ export const translations = {
     fuelUsedSoFar: 'Fuel Used',
     weatherTemperature: 'Weather',
     rainWarning: 'Wet road',
+    selectVehiclePreset: 'Select Car from List',
+    popularVehicles: 'Top Popular Vehicles (Turkey)',
+    customVehicle: 'Other / Custom Vehicle',
+    customVehicleName: 'Vehicle Model Name',
+    customVehicleHint: 'e.g. BMW 320i, Honda Civic...',
+    engineAndSegment: 'Engine & Segment',
+    consumptionRange: 'Average Consumption',
   }
 };
 
