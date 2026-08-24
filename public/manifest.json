@@ -1,23 +1,30 @@
 {
-  "name": "Q2 Trip Cost Istanbul",
-  "short_name": "Q2 Trip Cost",
-  "description": "Calculate realistic driving costs for your Audi Q2 in Istanbul.",
+  "name": "YolPay™ - Akıllı Yolculuk & Yakıt Maliyeti",
+  "short_name": "YolPay™",
+  "description": "Trafiğe duyarlı gerçek yakıt tüketimi, canlı akaryakıt ve köprü/otoyol geçiş ücreti hesaplama.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#f5f5f5",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
