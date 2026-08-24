@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useJsApiLoader } from '@react-google-maps/api';
 import TripForm from '@/components/Forms/TripForm';
@@ -219,13 +220,29 @@ function AppContent() {
       {/* Header */}
       <header className="w-full max-w-5xl flex items-center justify-between py-4 mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.2)]">
-            {vehicleSettings?.carModel?.includes('Q2') ? 'Q2' : <Car size={18} />}
+          <div className="relative w-11 h-11 rounded-2xl overflow-hidden border border-white/15 shadow-[0_0_20px_rgba(230,0,0,0.25)] flex items-center justify-center bg-black/70 shrink-0">
+            <Image
+              src="/yolpay-logo.jpg"
+              alt="YolPay Logo"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
-          <div>
-            <h1 className="font-light tracking-wider text-xl text-neutral-100 flex items-center gap-2">
-              {vehicleSettings?.carModel || 'Audi Q2'} <span className="font-semibold text-xs tracking-widest text-neutral-400 uppercase">{getTranslation(language, 'appTitle')}</span>
-            </h1>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <h1 className="font-bold tracking-tight text-2xl text-white flex items-center">
+                YolPay<span className="text-[11px] font-bold text-red-500 ml-0.5 self-start -mt-0.5 tracking-normal">™</span>
+              </h1>
+              {vehicleSettings?.carModel && (
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold tracking-wider uppercase hidden sm:inline-block">
+                  {vehicleSettings.carModel}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] font-medium text-neutral-400 tracking-wide">
+              {getTranslation(language, 'appTagline')}
+            </span>
           </div>
         </div>
 

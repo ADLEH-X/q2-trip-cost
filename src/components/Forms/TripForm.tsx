@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { ArrowDownUp, MapPin, Navigation, Home } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowDownUp, MapPin, Navigation, Home, BookmarkCheck, Check } from 'lucide-react';
 import { getTranslation, Language } from '@/lib/translations';
+import { storage, SavedLocation } from '@/lib/storage';
 import { Autocomplete } from '@react-google-maps/api';
 
 interface TripFormProps {
@@ -19,9 +20,16 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
   const [originPlaceId, setOriginPlaceId] = useState('');
   const [destinationPlaceId, setDestinationPlaceId] = useState('');
   const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [savedHome, setSavedHome] = useState<SavedLocation | null>(null);
+  const [showHomeToast, setShowHomeToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const originAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const destinationAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  useEffect(() => {
+    setSavedHome(storage.getHomeLocation());
+  }, []);
 
   const handleSwap = () => {
     setOriginText(destinationText);
@@ -31,26 +39,53 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
     setDestinationPlaceId(tempId);
   };
 
+  const showNotification = (msg: string) => {
+    setToastMessage(msg);
+    setShowHomeToast(true);
+    setTimeout(() => setShowHomeToast(false), 3000);
+  };
+
   const handleSetHome = () => {
-    const homeAddress = "Fit216 Sports Club & SPA, Dumlupınar, Barış Sk. No:45 D:2.Etap -2, 34720 Kadıköy/İstanbul";
-    setOriginText(homeAddress);
-    
-    if (typeof window !== 'undefined' && window.google) {
-      const service = new google.maps.places.PlacesService(document.createElement('div'));
-      service.findPlaceFromQuery(
-        { query: "Fit216 Sports Club & SPA Kadikoy", fields: ['place_id'] }, 
-        (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-            if (results[0].place_id) {
-               setOriginPlaceId(results[0].place_id);
+    const currentHome = storage.getHomeLocation();
+    if (currentHome && currentHome.address) {
+      setOriginText(currentHome.address);
+      if (currentHome.placeId) {
+        setOriginPlaceId(currentHome.placeId);
+      } else if (typeof window !== 'undefined' && window.google) {
+        const service = new google.maps.places.PlacesService(document.createElement('div'));
+        service.findPlaceFromQuery(
+          { query: currentHome.address, fields: ['place_id'] },
+          (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]?.place_id) {
+              setOriginPlaceId(results[0].place_id);
+              storage.saveHomeLocation({ address: currentHome.address, placeId: results[0].place_id });
             }
-          } else {
-            console.error("Failed to find Place ID for Home address:", status);
           }
-        }
-      );
+        );
+      }
+      showNotification(getTranslation(language, 'setToHome'));
+    } else {
+      // If no home is saved yet, save current typed address if available
+      if (originText.trim()) {
+        storage.saveHomeLocation({ address: originText.trim(), placeId: originPlaceId });
+        setSavedHome({ address: originText.trim(), placeId: originPlaceId });
+        showNotification(getTranslation(language, 'homeSavedSuccess'));
+      } else {
+        alert(getTranslation(language, 'noHomeSavedPrompt'));
+      }
     }
   };
+
+  const handleSaveCurrentAsHome = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (originText.trim()) {
+      storage.saveHomeLocation({ address: originText.trim(), placeId: originPlaceId });
+      setSavedHome({ address: originText.trim(), placeId: originPlaceId });
+      showNotification(getTranslation(language, 'homeSavedSuccess'));
+    }
+  };
+
   const handleSetCurrentLocation = () => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -80,6 +115,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
       alert(getTranslation(language, 'geolocationNotSupported'));
     }
   };
+
   const onOriginLoad = (autocomplete: google.maps.places.Autocomplete) => {
     originAutocompleteRef.current = autocomplete;
     autocomplete.setComponentRestrictions({ country: 'TR' });
@@ -113,7 +149,6 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isMockFallback) {
-      // Allow visual testing bypassing real Places IDs
       onSubmit('mock_origin_id', 'mock_destination_id', isRoundTrip, originText, destinationText);
       return;
     }
@@ -136,7 +171,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
         setOriginText(e.target.value);
         if (!isMockFallback) setOriginPlaceId(''); 
       }}
-      className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-500 font-light"
+      className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 pl-11 pr-20 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-500 font-light"
       required
     />
   );
@@ -159,12 +194,38 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
     <div className="backdrop-blur-xl bg-black/40 rounded-3xl border border-white/10 p-5 w-full shadow-2xl relative overflow-hidden">
       {/* Decorative gradient orb */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      {/* Floating Home Action Toast */}
+      {showHomeToast && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-xl bg-emerald-600/90 border border-emerald-400/30 text-white text-xs font-medium shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+          <Check size={14} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10">
         <div className="relative flex flex-col gap-3">
           
           <div>
-            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1 block">{getTranslation(language, 'from')}</label>
+            <div className="flex items-center justify-between mb-1.5 ml-1">
+              <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest block">
+                {getTranslation(language, 'from')}
+              </label>
+
+              {/* Quick Save Current as Home button when origin has text and differs from saved home */}
+              {originText.trim() && originText !== savedHome?.address && (
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentAsHome}
+                  className="text-[10px] text-red-400 hover:text-red-300 transition-colors flex items-center gap-1 font-medium"
+                  title={getTranslation(language, 'saveCurrentAsHome')}
+                >
+                  <BookmarkCheck size={12} />
+                  <span>{getTranslation(language, 'saveCurrentAsHome')}</span>
+                </button>
+              )}
+            </div>
+
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 z-10">
                 <Navigation size={18} strokeWidth={1.5} />
@@ -174,15 +235,23 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
                   {renderOriginInput()}
                 </Autocomplete>
               ) : renderOriginInput()}
+
+              {/* Home Button */}
               <button 
                 type="button"
                 onClick={handleSetHome}
-                title={getTranslation(language, 'setToHome')}
+                title={savedHome?.address ? `${getTranslation(language, 'setToHome')} (${savedHome.address})` : getTranslation(language, 'setToHome')}
                 aria-label={getTranslation(language, 'setToHome')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all z-10"
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all z-10 ${
+                  savedHome?.address
+                    ? 'text-red-500 hover:bg-red-500/10'
+                    : 'text-neutral-500 hover:text-red-500 hover:bg-red-500/10'
+                }`}
               >
                 <Home size={18} />
               </button>
+
+              {/* Current Location Button */}
               <button
                 type="button"
                 onClick={handleSetCurrentLocation}
@@ -195,6 +264,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
             </div>
           </div>
 
+          {/* Swap Origin & Destination */}
           <button
             type="button"
             onClick={handleSwap}
@@ -204,8 +274,11 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
             <ArrowDownUp size={16} strokeWidth={2} />
           </button>
 
+          {/* Destination Field */}
           <div>
-            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1 block">{getTranslation(language, 'to')}</label>
+            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1 block">
+              {getTranslation(language, 'to')}
+            </label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-600 z-10">
                 <MapPin size={18} strokeWidth={1.5} />
@@ -219,6 +292,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
           </div>
         </div>
 
+        {/* Route Direction Switcher */}
         <div className="flex bg-white/5 border border-white/5 rounded-2xl p-1">
           <button
             type="button"
@@ -236,6 +310,7 @@ export default function TripForm({ language, isLoaded, onSubmit, isLoading, isMo
           </button>
         </div>
 
+        {/* Calculate Cost Button */}
         <button
           type="submit"
           disabled={isLoading || (!isMockFallback && (!originPlaceId || !destinationPlaceId))}

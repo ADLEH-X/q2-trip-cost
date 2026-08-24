@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   LANGUAGE: 'q2_language',
   HISTORY: 'q2_history',
   THEME: 'q2_theme',
+  HOME_LOCATION: 'yolpay_home_location',
 };
 
 export const defaultVehicleSettings: VehicleSettings = {
@@ -14,6 +15,11 @@ export const defaultVehicleSettings: VehicleSettings = {
   consumptionL100km: 5.4, // 2026 Audi Q2 35 TFSI WLTP Combined Average
   tollClass: 1, // standard passenger car
 };
+
+export interface SavedLocation {
+  address: string;
+  placeId?: string;
+}
 
 export const storage = {
   getVehicleSettings(): VehicleSettings {
@@ -30,6 +36,28 @@ export const storage = {
   saveVehicleSettings(settings: VehicleSettings): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEYS.VEHICLE_SETTINGS, JSON.stringify(settings));
+  },
+
+  // Home Location Management
+  getHomeLocation(): SavedLocation | null {
+    if (typeof window === 'undefined') return null;
+    const data = localStorage.getItem(STORAGE_KEYS.HOME_LOCATION);
+    if (!data) return null;
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  saveHomeLocation(loc: SavedLocation): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.HOME_LOCATION, JSON.stringify(loc));
+  },
+
+  clearHomeLocation(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(STORAGE_KEYS.HOME_LOCATION);
   },
   
   getLanguage(): 'tr' | 'en' {

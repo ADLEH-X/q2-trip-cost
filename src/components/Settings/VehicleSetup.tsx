@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { VehicleSettings, PowertrainType } from '@/lib/providers/interfaces';
-import { storage } from '@/lib/storage';
+import { storage, SavedLocation } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { POPULAR_CARS, CarPreset } from '@/lib/carPresets';
-import { X, ChevronDown, Car, Gauge, Fuel } from 'lucide-react';
+import { X, ChevronDown, Car, Gauge, Fuel, Home, Trash2 } from 'lucide-react';
 
 interface VehicleSetupProps {
   language: Language;
@@ -17,11 +17,15 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
   const [settings, setSettings] = useState<VehicleSettings | null>(null);
   const [selectedPresetId, setSelectedPresetId] = useState<string>('audi-q2');
   const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
+  const [homeLocation, setHomeLocation] = useState<SavedLocation | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = storage.getVehicleSettings();
     setSettings(saved);
+
+    const savedHome = storage.getHomeLocation();
+    setHomeLocation(savedHome);
 
     // Check if the saved carModel matches any preset
     const matchingPreset = POPULAR_CARS.find(
@@ -102,6 +106,14 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
 
   const handleSave = () => {
     storage.saveVehicleSettings(settings);
+
+    // Save or clear Home Location
+    if (homeLocation && homeLocation.address.trim()) {
+      storage.saveHomeLocation(homeLocation);
+    } else {
+      storage.clearHomeLocation();
+    }
+
     onSave(settings);
     onClose();
   };
@@ -321,6 +333,34 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
                   personalAverageConsumption: e.target.value ? parseFloat(e.target.value) : undefined,
                 })
               }
+              className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-600 font-light text-sm"
+            />
+          </div>
+
+          {/* 6. Custom Home Address Setup */}
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-white/10">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-neutral-300 uppercase tracking-widest flex items-center gap-1.5">
+                <Home size={13} className="text-red-500" />
+                {getTranslation(language, 'homeAddress')}
+              </label>
+              {homeLocation?.address && (
+                <button
+                  type="button"
+                  onClick={() => setHomeLocation(null)}
+                  className="text-[10px] text-neutral-500 hover:text-red-400 flex items-center gap-1 transition-colors"
+                  title={getTranslation(language, 'clearHistory')}
+                >
+                  <Trash2 size={10} />
+                  {getTranslation(language, 'clearHistory')}
+                </button>
+              )}
+            </div>
+            <input
+              type="text"
+              placeholder={getTranslation(language, 'homeAddressHint')}
+              value={homeLocation?.address || ''}
+              onChange={(e) => setHomeLocation({ address: e.target.value })}
               className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all text-white placeholder:text-neutral-600 font-light text-sm"
             />
           </div>

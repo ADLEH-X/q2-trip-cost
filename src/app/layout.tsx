@@ -5,9 +5,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Q2 Trip Cost Istanbul",
-  description: "Calculate realistic driving costs for your Audi Q2 in Istanbul, including live fuel and toll prices.",
+  title: "YolPay™ | Akıllı Yolculuk Maliyeti & Yakıt Hesabı",
+  description: "Trafiğe duyarlı gerçek yakıt tüketimi, canlı akaryakıt fiyatları ve köprü/otoyol geçiş ücreti hesaplayıcı.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/yolpay-logo.jpg",
+    apple: "/yolpay-logo.jpg",
+  },
 };
 
 export default function RootLayout({
