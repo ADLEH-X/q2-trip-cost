@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { YOLPAY_LOGO_BASE64 } from "@/assets/logo";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -9,8 +10,8 @@ export const metadata: Metadata = {
   description: "Trafiğe duyarlı gerçek yakıt tüketimi, canlı akaryakıt fiyatları ve köprü/otoyol geçiş ücreti hesaplayıcı.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/yolpay-logo.jpg",
-    apple: "/yolpay-logo.jpg",
+    icon: YOLPAY_LOGO_BASE64,
+    apple: YOLPAY_LOGO_BASE64,
   },
 };
 

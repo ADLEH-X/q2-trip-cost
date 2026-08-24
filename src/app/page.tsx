@@ -9,6 +9,7 @@ import RouteCards from '@/components/Results/RouteCards';
 import Map from '@/components/Map/Map';
 import VehicleSetup from '@/components/Settings/VehicleSetup';
 import RecentTrips from '@/components/Results/RecentTrips';
+import Logo from '@/components/Brand/Logo';
 import { VehicleSettings, RouteCalculation, TripCostCalculation, FuelPriceInfo, LiveTripState } from '@/lib/providers/interfaces';
 import { routingProvider } from '@/lib/providers/googleRoutesAdapter';
 import { fuelPriceProvider } from '@/lib/providers/fuelPrice';
@@ -220,15 +221,7 @@ function AppContent() {
       {/* Header */}
       <header className="w-full max-w-5xl flex items-center justify-between py-4 mb-2">
         <div className="flex items-center gap-3">
-          <div className="relative w-11 h-11 rounded-2xl overflow-hidden border border-white/15 shadow-[0_0_20px_rgba(230,0,0,0.25)] flex items-center justify-center bg-black/70 shrink-0">
-            <Image
-              src="/yolpay-logo.jpg"
-              alt="YolPay Logo"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
+          <Logo size={44} />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <h1 className="font-bold tracking-tight text-2xl text-white flex items-center">
