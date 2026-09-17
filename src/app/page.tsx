@@ -8,6 +8,7 @@ import TripForm from '@/components/Forms/TripForm';
 import RouteCards from '@/components/Results/RouteCards';
 import Map from '@/components/Map/Map';
 import VehicleSetup from '@/components/Settings/VehicleSetup';
+import CarSelectorModal from '@/components/Settings/CarSelectorModal';
 import RecentTrips from '@/components/Results/RecentTrips';
 import Logo from '@/components/Brand/Logo';
 import { VehicleSettings, RouteCalculation, TripCostCalculation, FuelPriceInfo, LiveTripState } from '@/lib/providers/interfaces';
@@ -17,7 +18,7 @@ import { calculateOneWayCost, rankAlternativeRoutes } from '@/lib/calculations';
 import { storage } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { liveTripTracker } from '@/lib/services/liveTripTracker';
-import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car, RefreshCw } from 'lucide-react';
+import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car, ChevronDown, RefreshCw } from 'lucide-react';
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
@@ -56,6 +57,7 @@ function AppContent() {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCarSelector, setShowCarSelector] = useState(false);
   const [isRoundTripActive, setIsRoundTripActive] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [language, setLanguage] = useState<Language>('tr');
@@ -242,11 +244,18 @@ function AppContent() {
               <h1 className="font-bold tracking-tight text-2xl text-white flex items-center">
                 YolPay<span className="text-[11px] font-bold text-red-500 ml-0.5 self-start -mt-0.5 tracking-normal">™</span>
               </h1>
-              {vehicleSettings?.carModel && (
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold tracking-wider uppercase hidden sm:inline-block">
-                  {vehicleSettings.carModel}
+              <button
+                type="button"
+                onClick={() => setShowCarSelector(true)}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all font-medium cursor-pointer shadow-sm group"
+                title={getTranslation(language, 'changeCar')}
+              >
+                <Car size={13} className="text-red-400 shrink-0" />
+                <span className="truncate max-w-[110px] sm:max-w-[190px] font-semibold">
+                  {vehicleSettings?.carModel || getTranslation(language, 'selectYourCar')}
                 </span>
-              )}
+                <ChevronDown size={12} className="text-red-400/70 group-hover:translate-y-0.5 transition-transform shrink-0" />
+              </button>
             </div>
             <span className="text-[11px] font-medium text-neutral-400 tracking-wide">
               {getTranslation(language, 'appTagline')}
@@ -422,8 +431,14 @@ function AppContent() {
               </div>
             )}
             
-            <div className="md:hidden h-56 w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg">
-              <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} theme={theme} />
+            <div className="md:hidden h-64 w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+              <Map
+                activeRoute={activeRoute?.route}
+                isLoaded={isLoaded}
+                isMockFallback={apiKeyMissing || !!loadError}
+                theme={theme}
+                currentLocation={liveTripState.currentLocation}
+              />
             </div>
 
             {routeResults && (
@@ -460,7 +475,13 @@ function AppContent() {
         {/* Right Column */}
         <div className="hidden md:flex flex-col gap-6 sticky top-6 h-[calc(100vh-3rem)]">
            <div className="flex-1 rounded-3xl overflow-hidden border border-white/10 shadow-2xl ring-1 ring-white/5 relative group">
-             <Map activeRoute={activeRoute?.route} isLoaded={isLoaded} isMockFallback={apiKeyMissing || !!loadError} theme={theme} />
+             <Map
+               activeRoute={activeRoute?.route}
+               isLoaded={isLoaded}
+               isMockFallback={apiKeyMissing || !!loadError}
+               theme={theme}
+               currentLocation={liveTripState.currentLocation}
+             />
              <div className="absolute inset-0 pointer-events-none ring-inset ring-1 ring-white/10 rounded-3xl transition-opacity group-hover:opacity-50"></div>
            </div>
            
@@ -482,6 +503,19 @@ function AppContent() {
           language={language}
           onSave={setVehicleSettings}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {showCarSelector && vehicleSettings && (
+        <CarSelectorModal
+          isOpen={showCarSelector}
+          currentSettings={vehicleSettings}
+          language={language}
+          onSelect={(updated) => {
+            setVehicleSettings(updated);
+            storage.saveVehicleSettings(updated);
+          }}
+          onClose={() => setShowCarSelector(false)}
         />
       )}
     </main>

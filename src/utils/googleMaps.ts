@@ -305,3 +305,45 @@ export function buildDirectionsUrl(
 
   return `${baseUrl}&${queryParts.join('&')}`;
 }
+
+/**
+ * Builds Apple Maps URL (opens natively in Apple CarPlay on iOS devices)
+ */
+export function buildAppleMapsUrl(route: RouteInfo): string {
+  let destCoord = '';
+  if (route.destinationCoord && typeof route.destinationCoord.lat === 'number') {
+    destCoord = `${route.destinationCoord.lat.toFixed(6)},${route.destinationCoord.lng.toFixed(6)}`;
+  } else if (route.polyline) {
+    const ep = decodePolylineEndpoints(route.polyline);
+    if (ep.destination) {
+      destCoord = `${ep.destination.lat.toFixed(6)},${ep.destination.lng.toFixed(6)}`;
+    }
+  }
+
+  const query = destCoord || encodeURIComponent(route.destinationText || 'Destination');
+  return `https://maps.apple.com/?daddr=${query}&dirflg=d`;
+}
+
+/**
+ * Builds Waze Navigation URL (opens in Waze on Android Auto / CarPlay)
+ */
+export function buildWazeUrl(route: RouteInfo): string {
+  let destLat = 0;
+  let destLng = 0;
+  if (route.destinationCoord && typeof route.destinationCoord.lat === 'number') {
+    destLat = route.destinationCoord.lat;
+    destLng = route.destinationCoord.lng;
+  } else if (route.polyline) {
+    const ep = decodePolylineEndpoints(route.polyline);
+    if (ep.destination) {
+      destLat = ep.destination.lat;
+      destLng = ep.destination.lng;
+    }
+  }
+
+  if (destLat && destLng) {
+    return `https://waze.com/ul?ll=${destLat.toFixed(6)},${destLng.toFixed(6)}&navigate=yes`;
+  }
+  return `https://waze.com/ul?q=${encodeURIComponent(route.destinationText || '')}&navigate=yes`;
+}
+

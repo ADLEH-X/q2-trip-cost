@@ -5,7 +5,8 @@ import { VehicleSettings, PowertrainType } from '@/lib/providers/interfaces';
 import { storage, SavedLocation } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { POPULAR_CARS, CarPreset } from '@/lib/carPresets';
-import { X, ChevronDown, Car, Gauge, Fuel, Home, Trash2 } from 'lucide-react';
+import { X, ChevronDown, Car, Gauge, Fuel, Home, Trash2, Sparkles } from 'lucide-react';
+import CarSelectorModal from './CarSelectorModal';
 
 interface VehicleSetupProps {
   language: Language;
@@ -18,6 +19,7 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
   const [selectedPresetId, setSelectedPresetId] = useState<string>('audi-q2');
   const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
   const [homeLocation, setHomeLocation] = useState<SavedLocation | null>(null);
+  const [showVisualModal, setShowVisualModal] = useState<boolean>(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -152,6 +154,36 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
         </div>
 
         <div className="flex flex-col gap-4">
+          {/* Visual Vehicle Selector Banner */}
+          <button
+            type="button"
+            onClick={() => setShowVisualModal(true)}
+            className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-red-950/40 via-red-900/20 to-transparent border border-red-500/25 hover:border-red-500/50 hover:bg-white/5 transition-all text-left group cursor-pointer shadow-lg shadow-red-950/20"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-red-600/15 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:scale-105 transition-transform shrink-0">
+                <Car size={20} />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="text-xs font-bold text-white group-hover:text-red-400 transition-colors truncate">
+                    {settings.carModel || getTranslation(language, 'selectYourCar')}
+                  </span>
+                  <span className="text-[10px] font-semibold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-md shrink-0">
+                    {settings.consumptionL100km} L
+                  </span>
+                </div>
+                <span className="text-[11px] text-neutral-400 truncate">
+                  {getTranslation(language, 'openVisualSelector')}
+                </span>
+              </div>
+            </div>
+            <div className="px-2.5 py-1.5 rounded-xl bg-red-600/15 group-hover:bg-red-600 text-red-400 group-hover:text-white text-xs font-semibold flex items-center gap-1 shrink-0 transition-all">
+              <Sparkles size={12} />
+              <span className="text-[11px] font-bold">{getTranslation(language, 'change')}</span>
+            </div>
+          </button>
+
           {/* 1. Quick Vehicle Preset Selection */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
@@ -375,6 +407,29 @@ export default function VehicleSetup({ language, onSave, onClose }: VehicleSetup
           </button>
         </div>
       </div>
+
+      {showVisualModal && (
+        <CarSelectorModal
+          isOpen={showVisualModal}
+          currentSettings={settings}
+          language={language}
+          onSelect={(updated) => {
+            setSettings(updated);
+            const matching = POPULAR_CARS.find(
+              (c) => c.makeModel.toLowerCase() === (updated.carModel || '').toLowerCase()
+            );
+            if (matching) {
+              setSelectedPresetId(matching.id);
+              setIsCustomModel(false);
+            } else {
+              setSelectedPresetId('custom');
+              setIsCustomModel(true);
+            }
+            setShowVisualModal(false);
+          }}
+          onClose={() => setShowVisualModal(false)}
+        />
+      )}
     </div>
   );
 }

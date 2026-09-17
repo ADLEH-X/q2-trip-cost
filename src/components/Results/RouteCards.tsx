@@ -1,5 +1,5 @@
 'use client';
-import { buildDirectionsUrl } from '@/utils/googleMaps';
+import { buildDirectionsUrl, buildAppleMapsUrl, buildWazeUrl } from '@/utils/googleMaps';
 
 import React from 'react';
 import { TripCostCalculation, RouteCalculation } from '@/lib/providers/interfaces';
@@ -146,21 +146,43 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
               </div>
             </div>
             {isSelected && (
-              <a
-                href={buildDirectionsUrl(route, {
-                  allRoutes: routes.map((r) => r.route),
-                  isTollFree: calc.isTollFree
-                })}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 mt-3 text-xs font-semibold text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 hover:border-white/20 shadow-sm"
-                title={getTranslation(language, 'openInMapsTitle')}
-                aria-label={getTranslation(language, 'openInMapsTitle')}
-              >
-                <Navigation size={14} className="text-red-500 shrink-0" />
-                <span>{getTranslation(language, 'openInMaps')}</span>
-              </a>
+              <div className="flex flex-wrap items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                <a
+                  href={buildDirectionsUrl(route, {
+                    allRoutes: routes.map((r) => r.route),
+                    isTollFree: calc.isTollFree
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 hover:border-white/20 shadow-sm"
+                  title="Google Maps (Android Auto / CarPlay)"
+                >
+                  <Navigation size={13} className="text-red-500 shrink-0" />
+                  <span>Google Maps</span>
+                </a>
+
+                <a
+                  href={buildAppleMapsUrl(route)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:text-white bg-white/5 hover:bg-white/15 rounded-xl transition-all border border-white/10 shadow-sm"
+                  title="Apple Maps (Apple CarPlay)"
+                >
+                  <Navigation size={13} className="text-sky-400 shrink-0" />
+                  <span>Apple Maps</span>
+                </a>
+
+                <a
+                  href={buildWazeUrl(route)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:text-white bg-white/5 hover:bg-white/15 rounded-xl transition-all border border-white/10 shadow-sm"
+                  title="Waze Navigation"
+                >
+                  <Navigation size={13} className="text-cyan-400 shrink-0" />
+                  <span>Waze</span>
+                </a>
+              </div>
             )}
             
             {calc.tollCostTRY === 0 && !calc.isTollFree && (

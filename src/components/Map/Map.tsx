@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { GoogleMap, Marker, TrafficLayer } from '@react-google-maps/api';
 import { RouteInfo, LatLngLiteral } from '@/lib/providers/interfaces';
 import { decodePolyline } from '@/utils/googleMaps';
 
-const containerStyle = {
+const containerStyle: React.CSSProperties = {
   width: '100%',
   height: '100%',
+  touchAction: 'manipulation',
 };
 
 // Default center: Istanbul
@@ -21,6 +22,7 @@ interface MapProps {
   isLoaded: boolean;
   isMockFallback?: boolean;
   theme?: 'dark' | 'light';
+  currentLocation?: LatLngLiteral | null;
 }
 
 const darkMapStyles = [
@@ -50,10 +52,34 @@ const lightMapStyles = [
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
 ];
 
-export default function Map({ activeRoute, isLoaded = true, isMockFallback, theme = 'dark' }: MapProps) {
+export default function Map({
+  activeRoute,
+  isLoaded = true,
+  isMockFallback,
+  theme = 'dark',
+  currentLocation,
+}: MapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [decodedPath, setDecodedPath] = useState<LatLngLiteral[]>([]);
-  const polylinesRef = React.useRef<google.maps.Polyline[]>([]);
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-resize handler for car screens, orientation changes & split-screen CarPlay
+  useEffect(() => {
+    if (!containerRef.current || !map || typeof google === 'undefined') return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      google.maps.event.trigger(map, 'resize');
+      if (decodedPath.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        decodedPath.forEach((p) => bounds.extend(p));
+        map.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, [map, decodedPath]);
 
   useEffect(() => {
     // Clear old polylines from the map immediately
@@ -123,28 +149,37 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback, them
     }
   }, [theme, map]);
 
-  const onLoad = React.useCallback(function callback(mapInstance: google.maps.Map) {
+  const onLoad = useCallback(function callback(mapInstance: google.maps.Map) {
     setMap(mapInstance);
   }, []);
 
-  const onUnmount = React.useCallback(function callback() {
+  const onUnmount = useCallback(function callback() {
     setMap(null);
   }, []);
 
-  if (!isLoaded) return <div className="w-full h-full bg-neutral-200 animate-pulse rounded-2xl"></div>;
+  if (!isLoaded) {
+    return <div className="w-full h-full bg-neutral-900/60 animate-pulse rounded-2xl"></div>;
+  }
 
   return (
-    <div className="w-full h-full rounded-2xl overflow-hidden relative border border-neutral-200/50 shadow-inner">
+    <div
+      ref={containerRef}
+      className="w-full h-full rounded-2xl overflow-hidden relative border border-white/10 shadow-inner select-none"
+      style={{ touchAction: 'manipulation' }}
+    >
       {typeof google !== 'undefined' ? (
         <GoogleMap
           mapContainerStyle={containerStyle}
-          center={defaultCenter}
+          center={currentLocation || defaultCenter}
           zoom={11}
           onLoad={onLoad}
           onUnmount={onUnmount}
           options={{
             disableDefaultUI: true,
             zoomControl: true,
+            gestureHandling: 'greedy', // 1-finger panning on car touchscreens
+            clickableIcons: false, // Disables accidental business taps while driving
+            keyboardShortcuts: false,
             styles: theme === 'light' ? lightMapStyles : darkMapStyles,
           }}
         >
@@ -155,9 +190,25 @@ export default function Map({ activeRoute, isLoaded = true, isMockFallback, them
               <Marker position={decodedPath[decodedPath.length - 1]} label="B" />
             </>
           )}
+
+          {/* Live Car / Driver Location Marker */}
+          {currentLocation && (
+            <Marker
+              position={currentLocation}
+              icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#ef4444',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2.5,
+              }}
+              zIndex={999}
+            />
+          )}
         </GoogleMap>
       ) : (
-        <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-500">
+        <div className="w-full h-full bg-neutral-900 flex items-center justify-center text-neutral-500 text-xs">
           Map Loading...
         </div>
       )}
