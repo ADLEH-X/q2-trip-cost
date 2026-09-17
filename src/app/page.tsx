@@ -17,7 +17,7 @@ import { calculateOneWayCost, rankAlternativeRoutes } from '@/lib/calculations';
 import { storage } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { liveTripTracker } from '@/lib/services/liveTripTracker';
-import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car } from 'lucide-react';
+import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car, RefreshCw } from 'lucide-react';
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
@@ -102,6 +102,8 @@ function AppContent() {
     document.documentElement.setAttribute('data-theme', nextTheme);
   };
 
+  const [isRefreshingFuel, setIsRefreshingFuel] = useState(false);
+
   // Initial load: settings and fuel price
   useEffect(() => {
     const settings = storage.getVehicleSettings();
@@ -117,6 +119,19 @@ function AppContent() {
       fuelPriceProvider.getCurrentPrice('EUROPE', vehicleSettings.fuelType).then(setFuelPrice);
     }
   }, [vehicleSettings?.fuelType]);
+
+  const handleRefreshFuel = async () => {
+    if (!vehicleSettings || isRefreshingFuel) return;
+    setIsRefreshingFuel(true);
+    try {
+      const freshPrice = await fuelPriceProvider.getCurrentPrice('EUROPE', vehicleSettings.fuelType);
+      setFuelPrice(freshPrice);
+    } catch (e) {
+      console.error('Failed to refresh fuel price:', e);
+    } finally {
+      setTimeout(() => setIsRefreshingFuel(false), 600);
+    }
+  };
 
   const handleTripSubmit = async (originId: string, destinationId: string, isRoundTrip: boolean, originText?: string, destinationText?: string) => {
     if (!vehicleSettings || !fuelPrice) return;
@@ -322,6 +337,15 @@ function AppContent() {
                     <span className="text-xs uppercase tracking-widest text-neutral-500 font-bold">
                       {getLocalizedFuelSource(fuelPrice.source, language)}
                     </span>
+                    <button
+                      type="button"
+                      onClick={handleRefreshFuel}
+                      title={language === 'tr' ? 'Fiyatları Canlı Yenile' : 'Refresh Live Prices'}
+                      aria-label={language === 'tr' ? 'Fiyatları Canlı Yenile' : 'Refresh Live Prices'}
+                      className="p-1 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+                    >
+                      <RefreshCw size={12} className={isRefreshingFuel ? 'animate-spin text-red-500' : ''} />
+                    </button>
                   </div>
                   <button
                     type="button"

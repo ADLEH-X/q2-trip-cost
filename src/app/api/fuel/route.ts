@@ -10,12 +10,13 @@ const OPET_ANADOLU_URL = 'https://api.opet.com.tr/api/fuelprices/prices?Province
 // Doviz.com Multi-Distributor Live Tables
 const DOVIZ_EUROPE_URL = 'https://www.doviz.com/akaryakit-fiyatlari/istanbul-avrupa';
 const DOVIZ_ANADOLU_URL = 'https://www.doviz.com/akaryakit-fiyatlari/istanbul-anadolu';
+const DOVIZ_GENERAL_URL = 'https://www.doviz.com/akaryakit-fiyatlari';
 
 const BENZIN_CODE = 'A100';       // Kurşunsuz Benzin 95
 const MOTORIN_CODE = 'A121';      // Motorin (UltraForce)
 const MOTORIN_ECO_CODE = 'A128';  // Motorin EcoForce
 
-// Short in-memory cache (3 minutes) to balance speed and zero staleness
+// Short in-memory cache (2 minutes) to balance speed and zero staleness
 let cachedData: {
   petrol: number;
   diesel: number;
@@ -24,7 +25,7 @@ let cachedData: {
   side: string;
 } | null = null;
 let lastFetchTime = 0;
-const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 function extractFromOpetJson(districts: any[]): { petrol: number; diesel: number } | null {
   try {
@@ -61,12 +62,13 @@ function extractFromDovizHtml(html: string): { petrol: number; diesel: number } 
       const text = row.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       // Match rows for Opet or Petrol Ofisi
       if (text.toLowerCase().includes('opet') || text.toLowerCase().includes('petrol ofisi')) {
-        // Find prices like 71,54 or 82,70 or ₺71,54
-        const priceMatches = text.match(/(?:₺\s*)?(\d{2}[,\.]\d{2})/g);
+        // Robust regex supporting 1 to 3 digits before decimal (e.g. 80.31 or 100.40)
+        const priceMatches = text.match(/(?:₺\s*)?(\d{1,3}[,\.]\d{2})/g);
         if (priceMatches && priceMatches.length >= 2) {
           const petrol = parseFloat(priceMatches[0].replace('₺', '').replace(',', '.').trim());
           const diesel = parseFloat(priceMatches[1].replace('₺', '').replace(',', '.').trim());
-          if (petrol > 40 && petrol < 150 && diesel > 40 && diesel < 150) {
+          // Accept any realistic price between 20 TL and 300 TL
+          if (petrol > 20 && petrol < 300 && diesel > 20 && diesel < 300) {
             return { petrol, diesel };
           }
         }
@@ -91,7 +93,7 @@ export async function GET(request: Request) {
   const side = searchParams.get('side') === 'ANATOLIA' ? 'ANATOLIA' : 'EUROPE';
   const now = Date.now();
 
-  // Return fast in-memory cache if younger than 3 minutes and same side
+  // Return fast in-memory cache if younger than 2 minutes and same side
   if (cachedData && cachedData.side === side && (now - lastFetchTime < CACHE_TTL_MS)) {
     return NextResponse.json(
       { ...cachedData, status: 'LIVE' },
@@ -109,7 +111,7 @@ export async function GET(request: Request) {
         'Referer': 'https://www.opet.com.tr/',
         'Origin': 'https://www.opet.com.tr',
       },
-      next: { revalidate: 0 },
+      cache: 'no-store',
     });
 
     if (res.ok) {
@@ -132,10 +134,10 @@ export async function GET(request: Request) {
       }
     }
   } catch (opetErr) {
-    console.warn('OPET API attempt failed, switching to backup source:', opetErr);
+    console.warn('OPET API primary attempt failed, switching to backup source:', opetErr);
   }
 
-  // --- SOURCE 2: Live Doviz.com Multi-Distributor Parser ---
+  // --- SOURCE 2: Live Doviz.com Multi-Distributor Istanbul Table ---
   try {
     const dovizUrl = side === 'ANATOLIA' ? DOVIZ_ANADOLU_URL : DOVIZ_EUROPE_URL;
     const res = await fetch(dovizUrl, {
@@ -144,7 +146,7 @@ export async function GET(request: Request) {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'tr-TR,tr;q=0.9',
       },
-      next: { revalidate: 0 },
+      cache: 'no-store',
     });
 
     if (res.ok) {
@@ -167,10 +169,43 @@ export async function GET(request: Request) {
       }
     }
   } catch (dovizErr) {
-    console.warn('Doviz.com backup fetch failed:', dovizErr);
+    console.warn('Doviz.com Istanbul backup fetch failed, trying general page:', dovizErr);
   }
 
-  // --- SOURCE 3: Stale Cache or Real-Time Safety Fallback ---
+  // --- SOURCE 3: Live Doviz.com General Turkey Table ---
+  try {
+    const res = await fetch(DOVIZ_GENERAL_URL, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const html = await res.text();
+      const prices = extractFromDovizHtml(html);
+      if (prices && prices.petrol > 0 && prices.diesel > 0) {
+        const result = {
+          petrol: prices.petrol,
+          diesel: prices.diesel,
+          source: `doviz.com (Türkiye Geneli)`,
+          retrievedAt: new Date().toISOString(),
+          side,
+        };
+        cachedData = result;
+        lastFetchTime = now;
+        return NextResponse.json(
+          { ...result, status: 'LIVE' },
+          { headers: STRICT_NO_CACHE_HEADERS }
+        );
+      }
+    }
+  } catch (dovizGenErr) {
+    console.warn('Doviz.com general fetch failed:', dovizGenErr);
+  }
+
+  // --- SOURCE 4: Stale In-Memory Cache (if ever fetched before) ---
   if (cachedData && cachedData.petrol > 0) {
     return NextResponse.json(
       { ...cachedData, status: 'CACHED' },
@@ -178,16 +213,17 @@ export async function GET(request: Request) {
     );
   }
 
-  const fallback = {
-    petrol: 71.54,
-    diesel: 82.70,
+  // --- SOURCE 5: Latest Known Baseline ---
+  const latestBaseline = {
+    petrol: 80.31,
+    diesel: 100.31,
     source: `OPET (${side === 'ANATOLIA' ? 'İstanbul Anadolu' : 'İstanbul Avrupa'})`,
     retrievedAt: new Date().toISOString(),
     side,
   };
 
   return NextResponse.json(
-    { ...fallback, status: 'LIVE' },
+    { ...latestBaseline, status: 'ESTIMATED' },
     { headers: STRICT_NO_CACHE_HEADERS }
   );
 }
