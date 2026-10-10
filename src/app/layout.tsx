@@ -13,9 +13,40 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://yolpay.vercel.app"),
   title: "YolPay™ | Akıllı Yolculuk Maliyeti & Yakıt Hesabı",
   description: "Trafiğe duyarlı gerçek yakıt tüketimi, canlı akaryakıt fiyatları ve köprü/otoyol geçiş ücreti hesaplayıcı.",
   applicationName: "YolPay™",
+  keywords: [
+    "YolPay",
+    "İstanbul yol ücreti",
+    "Avrasya Tüneli ücreti",
+    "köprü geçiş ücreti hesaplama",
+    "yakıt tüketimi hesaplama",
+    "HGS hesaplama",
+    "Istanbul toll calculator",
+    "trip cost calculator",
+  ],
+  verification: {
+    google: "U2oTqRQ48plcFIIkxYV67r1qlx3tnqUpYiGa_wj0J8U",
+  },
+  openGraph: {
+    title: "YolPay™ | Akıllı Yolculuk Maliyeti & Yakıt Hesabı",
+    description: "Trafiğe duyarlı gerçek yakıt tüketimi, canlı akaryakıt fiyatları ve köprü/otoyol geçiş ücreti hesaplayıcı.",
+    url: "https://yolpay.vercel.app",
+    siteName: "YolPay™",
+    locale: "tr_TR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "YolPay™ | Akıllı Yolculuk Maliyeti",
+    description: "Trafiğe duyarlı gerçek yakıt tüketimi, canlı akaryakıt fiyatları ve köprü/otoyol geçiş ücreti hesaplayıcı.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   appleWebApp: {
     capable: true,
     title: "YolPay™",
