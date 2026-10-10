@@ -1,10 +1,11 @@
 'use client';
 import { buildDirectionsUrl, buildAppleMapsUrl, buildWazeUrl } from '@/utils/googleMaps';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TripCostCalculation, RouteCalculation } from '@/lib/providers/interfaces';
 import { getTranslation, localizeRouteLabel, Language } from '@/lib/translations';
-import { Zap, CheckCircle2, Fuel, Coins, Navigation, Info, Leaf, CloudRain, Sun } from 'lucide-react';
+import { Zap, CheckCircle2, Fuel, Coins, Navigation, Info, Leaf, CloudRain, Sun, Share2, Check } from 'lucide-react';
+import { analytics } from '@/lib/services/analytics';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -22,7 +23,55 @@ interface RouteCardsProps {
 }
 
 export default function RouteCards({ calculations, routes, selectedRouteId, onSelectRoute, language, isRoundTripActive = false }: RouteCardsProps) {
+  const [copiedRouteId, setCopiedRouteId] = useState<string | null>(null);
+
   if (!calculations || calculations.length === 0) return null;
+
+  const handleShare = (e: React.MouseEvent, calc: TripCostCalculation, route: any) => {
+    e.stopPropagation();
+    const routeLabel = localizeRouteLabel(route.label, language) || 'Yolculuk';
+    const dist = (route.distanceKm * (isRoundTripActive ? 2 : 1)).toFixed(1);
+    const dur = Number(route.trafficDurationMins) * (isRoundTripActive ? 2 : 1);
+    const split3 = (calc.totalOneWayTRY / 3).toFixed(0);
+
+    const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://yolpay.vercel.app';
+    const text = language === 'tr'
+      ? `🚗 YolPay™ Yolculuk Masraf Fişi\n` +
+        `📍 Rota: ${routeLabel} (${dist} km • ${dur} dk)\n` +
+        `⛽ Yakıt: ${calc.fuelCostTRY.toFixed(0)} TL\n` +
+        `🌉 Köprü/Tünel: ${calc.tollCostTRY.toFixed(0)} TL\n` +
+        `💳 Toplam: ${calc.totalOneWayTRY.toFixed(0)} TL\n` +
+        `👥 Kişi başı (3 kişi): ~${split3} TL\n` +
+        `🔗 Hesapla: ${shareUrl}`
+      : `🚗 YolPay™ Trip Cost Receipt\n` +
+        `📍 Route: ${routeLabel} (${dist} km • ${dur} min)\n` +
+        `⛽ Fuel: ${calc.fuelCostTRY.toFixed(0)} TRY\n` +
+        `🌉 Tolls: ${calc.tollCostTRY.toFixed(0)} TRY\n` +
+        `💳 Total: ${calc.totalOneWayTRY.toFixed(0)} TRY\n` +
+        `👥 Per person (3 people): ~${split3} TRY\n` +
+        `🔗 Calculate: ${shareUrl}`;
+
+    analytics.track('share_clicked', {
+      routeId: calc.routeId,
+      totalCost: calc.totalOneWayTRY,
+      isRoundTrip: isRoundTripActive,
+    });
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'YolPay™ Masraf Fişi',
+        text: text,
+      }).catch(() => {});
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedRouteId(calc.routeId);
+      setTimeout(() => setCopiedRouteId(null), 2500);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -182,6 +231,25 @@ export default function RouteCards({ calculations, routes, selectedRouteId, onSe
                   <Navigation size={13} className="text-cyan-400 shrink-0" />
                   <span>Waze</span>
                 </a>
+
+                <button
+                  type="button"
+                  onClick={(e) => handleShare(e, calc, route)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/15 hover:bg-emerald-500/25 rounded-xl transition-all border border-emerald-500/30 shadow-sm cursor-pointer ml-auto"
+                  title={getTranslation(language, 'shareCost')}
+                >
+                  {copiedRouteId === calc.routeId ? (
+                    <>
+                      <Check size={13} className="text-emerald-400 shrink-0" />
+                      <span>{getTranslation(language, 'copiedToClipboard')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 size={13} className="text-emerald-400 shrink-0" />
+                      <span>{getTranslation(language, 'shareCost')}</span>
+                    </>
+                  )}
+                </button>
               </div>
             )}
             

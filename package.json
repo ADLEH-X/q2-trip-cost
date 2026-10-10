@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@jridgewell/sourcemap-codec": "^1.6.0",
     "@react-google-maps/api": "^2.20.8",
     "autoprefixer": "^10.5.4",
     "cheerio": "^1.2.0",

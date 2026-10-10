@@ -7,10 +7,11 @@ export const revalidate = 86400;
 export async function GET() {
   // Default fallback prices in case scraping fails (e.g. if their website goes down or changes layout)
   const tolls = {
-    avrasya: 330.00, // 2026 Daytime Rate
+    avrasya: 330.00, // 2026 Daytime Rate (05:00 - 23:59)
+    avrasyaNight: 165.00, // 50% Night Tariff (00:00 - 04:59)
     yss: 110.00,
     fsm: 59.00,
-    osmangazi: 399.00, // Current ~2024/2025 estimate
+    osmangazi: 399.00, // Current estimate
     canakkale: 419.00,
     lastUpdated: new Date().toISOString()
   };
@@ -28,13 +29,12 @@ export async function GET() {
         const $ = cheerio.load(html);
         
         // Find the specific table cell containing the Automobile (Otomobil) daytime tariff.
-        // It's typically structured near the word "Otomobil" or "₺"
         const textNodes = $('body').text();
         
-        // Match pattern: 330,00 or 330.00 near the word Otomobil or just find the highest likely price in the table
         const otomobilMatch = textNodes.match(/Otomobil[\s\S]{0,100}?(\d{2,3})[,.](\d{2})/i);
         if (otomobilMatch && otomobilMatch[1]) {
            tolls.avrasya = parseFloat(`${otomobilMatch[1]}.${otomobilMatch[2]}`);
+           tolls.avrasyaNight = parseFloat((tolls.avrasya * 0.5).toFixed(2));
         }
       }
     } catch (e) {

@@ -1,4 +1,14 @@
 import { NextResponse } from 'next/server';
+import {
+  allowRequest,
+  buildCacheKey,
+  getCached,
+  getClientId,
+  isAllowedEmissionType,
+  isValidPlaceId,
+  reserveUpstreamCalls,
+  setCached,
+} from '@/lib/server/routesGuard';
 
 const GOOGLE_ROUTES_API_KEY = process.env.GOOGLE_ROUTES_API_KEY;
 
@@ -17,6 +27,26 @@ export async function POST(request: Request) {
         { error: 'Google Routes API key is missing. Please configure .env.local' },
         { status: 500 }
       );
+    }
+
+    // Cost guardrails: reject malformed input before it can reach the billable API.
+    if (!isValidPlaceId(origin) || !isValidPlaceId(destination) || !isAllowedEmissionType(emissionType)) {
+      return NextResponse.json({ error: 'Invalid request', code: 'INVALID_INPUT' }, { status: 400 });
+    }
+
+    const cacheKey = buildCacheKey(origin, destination, emissionType);
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
+    }
+
+    if (!allowRequest(getClientId(request))) {
+      return NextResponse.json({ error: 'Too many requests', code: 'RATE_LIMITED' }, { status: 429 });
+    }
+
+    // Reserve the primary upstream call against today's cap.
+    if (!reserveUpstreamCalls(1)) {
+      return NextResponse.json({ error: 'Daily capacity reached', code: 'DAILY_CAP' }, { status: 429 });
     }
 
     // Map emission type to Google Routes API enum
@@ -65,7 +95,7 @@ export async function POST(request: Request) {
     }
 
     // Force alternative route if Google only returns 1
-    if (data.routes && data.routes.length === 1) {
+    if (data.routes && data.routes.length === 1 && reserveUpstreamCalls(1)) {
       const altPayload = {
         ...payload,
         routeModifiers: { ...payload.routeModifiers, avoidTolls: true },
@@ -87,7 +117,7 @@ export async function POST(request: Request) {
           // Only add if it's actually a different route (distance differs)
           if (altData.routes[0].distanceMeters !== data.routes[0].distanceMeters) {
             data.routes.push(altData.routes[0]);
-          } else {
+          } else if (reserveUpstreamCalls(1)) {
             // Try avoiding highways if toll-free was identical
             const hwyPayload = {
               ...payload,
@@ -117,7 +147,11 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json(data);
+    if (data.routes && data.routes.length > 0) {
+      setCached(cacheKey, data);
+    }
+
+    return NextResponse.json(data, { headers: { 'X-Cache': 'MISS' } });
   } catch (error) {
     console.error('Error proxying route request:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

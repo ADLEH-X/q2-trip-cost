@@ -9,6 +9,7 @@ import RouteCards from '@/components/Results/RouteCards';
 import Map from '@/components/Map/Map';
 import VehicleSetup from '@/components/Settings/VehicleSetup';
 import CarSelectorModal from '@/components/Settings/CarSelectorModal';
+import FeedbackModal from '@/components/Feedback/FeedbackModal';
 import RecentTrips from '@/components/Results/RecentTrips';
 import Logo from '@/components/Brand/Logo';
 import { VehicleSettings, RouteCalculation, TripCostCalculation, FuelPriceInfo, LiveTripState } from '@/lib/providers/interfaces';
@@ -18,7 +19,8 @@ import { calculateOneWayCost, rankAlternativeRoutes } from '@/lib/calculations';
 import { storage } from '@/lib/storage';
 import { getTranslation, Language } from '@/lib/translations';
 import { liveTripTracker } from '@/lib/services/liveTripTracker';
-import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car, ChevronDown, RefreshCw } from 'lucide-react';
+import { analytics } from '@/lib/services/analytics';
+import { Settings, Moon, Sun, AlertTriangle, Play, Square, Pause, RotateCcw, Navigation2, Car, ChevronDown, RefreshCw, MessageSquare } from 'lucide-react';
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
@@ -58,6 +60,7 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showCarSelector, setShowCarSelector] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [isRoundTripActive, setIsRoundTripActive] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [language, setLanguage] = useState<Language>('tr');
@@ -95,6 +98,7 @@ function AppContent() {
     const nextLang = language === 'tr' ? 'en' : 'tr';
     setLanguage(nextLang);
     storage.saveLanguage(nextLang);
+    analytics.track('language_toggled', { language: nextLang });
   };
 
   const toggleTheme = () => {
@@ -102,6 +106,7 @@ function AppContent() {
     setTheme(nextTheme);
     storage.saveTheme(nextTheme);
     document.documentElement.setAttribute('data-theme', nextTheme);
+    analytics.track('theme_toggled', { theme: nextTheme });
   };
 
   const [isRefreshingFuel, setIsRefreshingFuel] = useState(false);
@@ -188,6 +193,16 @@ function AppContent() {
         setRouteResults({ calcs, routes: outboundRoutes });
         setSelectedRouteId(calcs[0].routeId);
 
+        analytics.track('calculation_completed', {
+          origin: originText || originId,
+          destination: destinationText || destinationId,
+          isRoundTrip,
+          carModel: vehicleSettings.carModel,
+          totalCostTRY: calcs[0].totalOneWayTRY,
+          tollCostTRY: calcs[0].tollCostTRY,
+          fuelCostTRY: calcs[0].fuelCostTRY,
+        });
+
         // Save trip to recent history
         if (originText && destinationText) {
           storage.addRecentTrip({
@@ -204,7 +219,11 @@ function AppContent() {
       }
     } catch (e) {
       console.error(e);
-      alert(getTranslation(language, 'failedToCalculateRoutes'));
+      if (e instanceof Error && e.message === 'SERVICE_BUSY') {
+        alert(getTranslation(language, 'serviceBusy'));
+      } else {
+        alert(getTranslation(language, 'failedToCalculateRoutes'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -282,6 +301,16 @@ function AppContent() {
             aria-label={theme === 'dark' ? 'Light mode' : 'Dark mode'}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {/* Feedback */}
+          <button 
+            onClick={() => setShowFeedback(true)}
+            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-neutral-400 hover:text-amber-400 relative group"
+            title={getTranslation(language, 'feedback')}
+            aria-label={getTranslation(language, 'feedback')}
+          >
+            <MessageSquare size={18} className="transition-transform group-hover:scale-110" />
           </button>
 
           {/* Settings */}
@@ -514,8 +543,20 @@ function AppContent() {
           onSelect={(updated) => {
             setVehicleSettings(updated);
             storage.saveVehicleSettings(updated);
+            analytics.track('car_changed', {
+              carModel: updated.carModel,
+              fuelType: updated.fuelType,
+            });
           }}
           onClose={() => setShowCarSelector(false)}
+        />
+      )}
+
+      {showFeedback && (
+        <FeedbackModal
+          isOpen={showFeedback}
+          onClose={() => setShowFeedback(false)}
+          language={language}
         />
       )}
     </main>

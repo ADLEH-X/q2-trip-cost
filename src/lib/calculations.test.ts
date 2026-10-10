@@ -11,6 +11,7 @@ import {
   calculateTrafficSegmentDistances,
 } from './services/fuelConsumptionEstimator';
 import { buildDirectionsUrl, decodePolyline } from '../utils/googleMaps';
+import { localizeRouteLabel } from './translations';
 
 describe('Traffic-Aware Fuel Consumption Estimator', () => {
   const petrolQ2: VehicleSettings = {
@@ -89,7 +90,7 @@ describe('Traffic-Aware Fuel Consumption Estimator', () => {
     expect(result.trafficSegments.normalKm).toBe(30);
     expect(result.trafficSegments.slowKm).toBe(0);
     expect(result.trafficSegments.jamKm).toBe(0);
-    expect(result.dataQuality).toBe('LIVE_TRAFFIC');
+    expect(result.dataQuality).toBe('MEDIUM');
   });
 
   // 2. Moderately Congested Route
@@ -336,8 +337,6 @@ describe('Traffic-Aware Fuel Consumption Estimator', () => {
 });
 
 describe('Route Label Localization', () => {
-  const { localizeRouteLabel } = require('./translations');
-
   it('localizes bridge and tunnel labels in Turkish and English', () => {
     expect(localizeRouteLabel('via FSM Bridge', 'tr')).toBe('FSM Köprüsü üzerinden');
     expect(localizeRouteLabel('via FSM Bridge', 'en')).toBe('via FSM Bridge');

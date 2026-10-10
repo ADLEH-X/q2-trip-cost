@@ -26,6 +26,11 @@ export const translations = {
     cachedData: 'Önbelleğe alınmış veri',
     // New keys
     noDrivingRouteFound: 'Sürüş rotası bulunamadı',
+    shareCost: 'Masrafı Paylaş',
+    copiedToClipboard: 'Fiş panoya kopyalandı!',
+    feedback: 'Geri Bildirim',
+    perPerson: 'Kişi başı',
+    serviceBusy: 'Servis şu an çok yoğun. Lütfen birkaç dakika sonra tekrar deneyin.',
     failedToCalculateRoutes: 'Rotalar hesaplanamadı. API anahtarlarını kontrol edin.',
     apiKeyMissingWarning: 'Google Maps API Anahtarı eksik. Arayüz görsel test modunda çalışıyor.',
     mapLoadError: 'Google Maps yüklenemedi. Lütfen API anahtarı kısıtlamalarını kontrol edin.',
@@ -146,6 +151,11 @@ export const translations = {
     cachedData: 'Cached data',
     // New keys
     noDrivingRouteFound: 'No driving route found',
+    shareCost: 'Share Cost',
+    copiedToClipboard: 'Receipt copied to clipboard!',
+    feedback: 'Feedback',
+    perPerson: 'Per person',
+    serviceBusy: 'The service is very busy right now. Please try again in a few minutes.',
     failedToCalculateRoutes: 'Failed to calculate routes. Check API keys.',
     apiKeyMissingWarning: 'Google Maps API Key is missing. The UI is running in visual mock mode.',
     mapLoadError: 'Google Maps failed to load. Please check your API key restrictions.',

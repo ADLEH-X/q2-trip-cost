@@ -57,6 +57,7 @@ type TollKey = 'avrasya' | 'yss' | 'fsm' | 'osmangazi' | 'canakkale';
 
 interface LiveTolls {
   avrasya: number;
+  avrasyaNight?: number;
   yss: number;
   fsm: number;
   osmangazi: number;
@@ -153,13 +154,16 @@ export class GoogleRoutesAdapter implements RoutingProvider {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('SERVICE_BUSY');
+      }
       throw new Error('Failed to calculate routes');
     }
 
     const data = await response.json();
 
     // Fetch live tolls (cached via Next.js for 24h)
-    let liveTolls: LiveTolls = { avrasya: 330.0, yss: 110.0, fsm: 59.0, osmangazi: 399.0, canakkale: 419.0 };
+    let liveTolls: LiveTolls = { avrasya: 330.0, avrasyaNight: 165.0, yss: 110.0, fsm: 59.0, osmangazi: 399.0, canakkale: 419.0 };
     try {
       const tollRes = await fetch('/api/tolls');
       if (tollRes.ok) liveTolls = await tollRes.json();
@@ -272,9 +276,17 @@ export class GoogleRoutesAdapter implements RoutingProvider {
       // 2. If Google didn't provide a TRY toll price, use our own geographic detection
       //    ONLY charge a major crossing toll if the polyline actually passes near that crossing
       if (tollTotal === 0 && detectedCrossings.length > 0) {
+        // Istanbul timezone is UTC+3 without daylight saving shifts
+        const tripDate = departureTime || new Date();
+        const istanbulHour = (tripDate.getUTCHours() + 3) % 24;
+        const isNightTariff = istanbulHour >= 0 && istanbulHour < 5;
+
         for (const crossingKey of detectedCrossings) {
           const crossing = MAJOR_CROSSINGS[crossingKey];
-          const tollPrice = liveTolls[crossing.tollKey];
+          let tollPrice = liveTolls[crossing.tollKey];
+          if (crossing.tollKey === 'avrasya' && isNightTariff) {
+            tollPrice = liveTolls.avrasyaNight ?? parseFloat((tollPrice * 0.5).toFixed(2));
+          }
           if (tollPrice && tollPrice > 0) {
             tollTotal += tollPrice;
           }
