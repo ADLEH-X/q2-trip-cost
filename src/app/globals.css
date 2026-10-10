@@ -186,7 +186,9 @@ optgroup {
 [data-theme="light"] input.bg-white\/5,
 [data-theme="light"] input[class*="bg-white/5"],
 [data-theme="light"] select.bg-white\/5,
-[data-theme="light"] select[class*="bg-white/5"] {
+[data-theme="light"] select[class*="bg-white/5"],
+[data-theme="light"] textarea.bg-white\/5,
+[data-theme="light"] textarea[class*="bg-white/5"] {
   background-color: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
   color: #1c1917 !important;
@@ -203,15 +205,27 @@ optgroup {
   color: #52525b !important;
 }
 
+[data-theme="light"] textarea::placeholder,
 [data-theme="light"] input::placeholder {
   color: #a8a29e !important;
 }
 
-/* Settings modal overlay */
-[data-theme="light"] .bg-\[\#111\] {
+/* Modals in Light Mode */
+[data-theme="light"] .bg-\[\#111\],
+[data-theme="light"] .bg-\[\#121212\],
+[data-theme="light"] .bg-\[\#121217\] {
   background-color: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #1c1917 !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Ensure gradient buttons always maintain white text in light mode */
+[data-theme="light"] .bg-gradient-to-r,
+[data-theme="light"] .bg-gradient-to-r *,
+[data-theme="light"] button.bg-gradient-to-r,
+[data-theme="light"] button.bg-gradient-to-r * {
+  color: #ffffff !important;
 }
 
 /* Calculate button / Primary CTA */

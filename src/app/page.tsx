@@ -557,6 +557,7 @@ function AppContent() {
           isOpen={showFeedback}
           onClose={() => setShowFeedback(false)}
           language={language}
+          theme={theme}
         />
       )}
     </main>
